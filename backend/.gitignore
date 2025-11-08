@@ -1,0 +1,36 @@
+# PYTHON / FLASK
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# ENVIRONMENTS
+venv/
+.env
+.env.*
+.venv/
+env/
+ENV/
+
+
+# LOGS / TEMP FILES
+*.log
+logs/
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# TEST / COVERAGE
+.coverage
+htmlcov/
+.pytest_cache/
+
+# OS / EDITOR FILES
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.code-workspace
