@@ -1,4 +1,6 @@
 from flask import Flask, jsonify
+from services.audio_transcribe import transcribe_audio
+
 
 app = Flask(__name__)
 
