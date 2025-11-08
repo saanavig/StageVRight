@@ -68,3 +68,8 @@ tmp/
 # PACKAGE MANAGER LOCK FILES (optional)
 # Uncomment next line if you want to ignore lock files
 # package-lock.json
+
+# ==================================
+# PYTHON VIRTUAL ENVIRONMENTS
+# ==================================
+venv/
