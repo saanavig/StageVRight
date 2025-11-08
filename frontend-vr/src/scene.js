@@ -1,5 +1,41 @@
 // src/scene.js
 // Dynamically build the classroom scene using A-Frame from JavaScript
+// HUD overlay logic (temporary, can be toggled with 'H')
+const hud = document.getElementById('hud-overlay');
+const hudPos = document.getElementById('hud-pos');
+const hudRot = document.getElementById('hud-rot');
+let hudVisible = true;
+
+function updateHUD() {
+  const camera = document.querySelector('a-camera, [camera]');
+  if (!camera) return;
+  const pos = camera.object3D.position;
+  const rot = camera.object3D.rotation;
+  hudPos.textContent = `x: ${pos.x.toFixed(2)}, y: ${pos.y.toFixed(2)}, z: ${pos.z.toFixed(2)}`;
+  hudRot.textContent = `x: ${(rot.x * 57.2958).toFixed(1)}°, y: ${(rot.y * 57.2958).toFixed(1)}°, z: ${(rot.z * 57.2958).toFixed(1)}°`;
+}
+
+// Update HUD every frame
+AFRAME.registerComponent('hud-updater', {
+  tick: updateHUD
+});
+
+// Attach the component to the camera (after scene is loaded)
+document.addEventListener('DOMContentLoaded', () => {
+  const scene = document.querySelector('a-scene');
+  scene.addEventListener('loaded', () => {
+    const camera = scene.querySelector('a-camera, [camera]');
+    if (camera) camera.setAttribute('hud-updater', '');
+  });
+});
+
+// Toggle HUD with 'H' key
+window.addEventListener('keydown', (e) => {
+  if (e.key.toLowerCase() === 'h') {
+    hudVisible = !hudVisible;
+    hud.style.display = hudVisible ? 'block' : 'none';
+  }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
   const scene = document.querySelector('a-scene');
