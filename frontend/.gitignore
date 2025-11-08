@@ -68,6 +68,7 @@ tmp/
 # MD files with steps for co-pilot
 # ==================================
 plan.md
+ngrok.yml
 
 # ==================================
 # PACKAGE MANAGER LOCK FILES (optional)
