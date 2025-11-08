@@ -1,0 +1,18 @@
+{
+  "filename": "tmpq9nid6an.wav",
+  "transcript": "Hi, my name is Arnaugd, I'm participating in SBO hacks this weekend. We're building a VR immersive app for the very first time. We have no idea how to do it, so let's see how it goes.",
+  "metrics": {
+    "transcript_length": 40,
+    "duration_seconds": 17.5,
+    "wpm": 137.0,
+    "fillers": 1,
+    "repetitions": 0,
+    "tone": "neutral",
+    "energy_level": 7,
+    "clarity_score": 10,
+    "fluency_score": 9,
+    "confidence_score": 10,
+    "overall_score": 9.0,
+    "feedback_summary": "Spoke at 137.0 WPM with 1 filler words and 0 repetitions. Good pacing overall \u2014 aim for fewer fillers for smoother delivery."
+  }
+}
