@@ -1,15 +1,18 @@
 import os
 import sys
-from flask import Flask, jsonify, request
+import json
 import tempfile
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from services import audio_transcribe
+from datetime import datetime
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 if CURRENT_DIR not in sys.path:
     sys.path.append(CURRENT_DIR)
 
-from services import audio_transcribe
-
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/")
 def home():
@@ -27,12 +30,19 @@ def analyze():
         return jsonify({"error": "Empty filename"}), 400
 
     try:
-        print(f"📥 Received file: {file.filename}")
+        print(f"Received file: {file.filename}")
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
             file.save(tmp.name)
             tmp_path = tmp.name
 
         result = audio_transcribe.run_pipeline(tmp_path)
+
+        os.makedirs("data/sessions", exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        save_path = os.path.join("data/sessions", f"{timestamp}.json")
+        with open(save_path, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"Session saved at: {save_path}")
 
         os.remove(tmp_path)
         return jsonify(result), 200
