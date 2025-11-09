@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SpeakSpaceVR — Choose Environment (3D)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <style>
+    html,body{margin:0;height:100%;background:#000;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    .fallback{position:fixed;inset:auto 12px 12px auto;background:rgba(0,0,0,.55);color:#eee;
+              padding:8px 10px;border:1px solid #333;border-radius:10px;font-size:12px}
+    .ui{position:fixed;left:12px;bottom:12px;color:#cfe8ff;background:rgba(0,0,0,.45);
+        padding:10px 12px;border:1px solid #333;border-radius:10px;font-size:12px}
+  </style>
+</head>
+<body>
+  <!-- Desktop tips -->
+  <div class="ui">WASD/Arrow keys to move • Mouse to look • Gaze/Click to select • Press “Enter VR” for headset</div>
+
+  <!-- Fallback links (show if JS fails) -->
+  <noscript>
+    <div class="fallback">
+      JavaScript is off. Open:
+      <a href="/Symposium/symposium.html">Hackathon</a> •
+      <a href="/auditorium/auditorium.html">Auditorium</a>
+    </div>
+  </noscript>
+
+  <a-scene renderer="antialias:true;physicallyCorrectLights:true" background="color: #0b1020">
+    <!-- Lights -->
+    <a-entity light="type: ambient; intensity: 0.35; color: #cfe8ff"></a-entity>
+    <a-entity light="type: directional; intensity: 1.0; color: #ffffff" position="2 4 -2"></a-entity>
+
+    <!-- Ground + subtle grid -->
+    <a-entity geometry="primitive: plane; width: 30; height: 30"
+              material="color: #0e1a3f; metalness: 0.1; roughness: 0.9"
+              rotation="-90 0 0" position="0 0 0"></a-entity>
+    <a-entity geometry="primitive: plane; width: 30; height: 30"
+              material="src: https://cdn.jsdelivr.net/gh/mrdoob/three.js@r155/examples/textures/square.png; repeat: 60 60; transparent: true; opacity: .08"
+              rotation="-90 0 0" position="0 0.01 0"></a-entity>
+
+    <!-- Title banner -->
+    <a-entity position="0 2.7 -3">
+      <a-entity text="value: SpeakSpaceVR; align: center; width: 6; color: #9bd6ff; shader: msdf;"></a-entity>
+      <a-entity position="0 -0.35 0"
+                text="value: Pick your environment; align: center; width: 4.5; color: #dff6ff; shader: msdf;"></a-entity>
+    </a-entity>
+
+    <!-- Card template (we’ll instantiate two) -->
+    <a-entity id="cards"></a-entity>
+
+    <!-- Player rig with gaze cursor -->
+    <a-entity id="rig" position="0 1.6 3">
+      <a-entity camera look-controls wasd-controls></a-entity>
+      <a-entity cursor="fuse: true; fuseTimeout: 900"
+                position="0 0 -1"
+                geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
+                material="color: white; shader: flat"></a-entity>
+      <!-- Raycaster so the cursor can hit our cards -->
+      <a-entity raycaster="objects: .pickable"></a-entity>
+    </a-entity>
+
+    <!-- Sky gradient (simple two-layer trick) -->
+    <a-sky color="#071126"></a-sky>
+    <a-entity geometry="primitive: sphere; radius: 80"
+              material="color: #051124; side: back; opacity: .6"></a-entity>
+
+    <script>
+      // Utility to create a hover-animated, clickable card
+      function createCard(opts){
+        const g = document.createElement('a-entity');
+        g.setAttribute('class', 'pickable');
+        g.setAttribute('position', opts.position || '0 1.5 -3');
+
+        // Card plane
+        const card = document.createElement('a-entity');
+        card.setAttribute('geometry', 'primitive: plane; width: 1.6; height: 1.0;');
+        card.setAttribute('material', `color: ${opts.color || '#0e1a3f'}; roughness: .9; metalness: .1;`);
+        card.setAttribute('shadow', 'cast: true; receive: true');
+        card.setAttribute('scale', '1 1 1');
+
+        // Outline (slightly bigger, behind)
+        const outline = document.createElement('a-entity');
+        outline.setAttribute('geometry', 'primitive: plane; width: 1.64; height: 1.04;');
+        outline.setAttribute('material', 'color: #59e0c5; opacity: .22; transparent: true;');
+        outline.setAttribute('position', '0 0 -0.001');
+
+        // Title
+        const title = document.createElement('a-entity');
+        title.setAttribute('position', '0 0.18 0.01');
+        title.setAttribute('text', `value: ${opts.title}; align: center; width: 2.4; color: #eaf2ff; shader: msdf;`);
+
+        // Body
+        const body = document.createElement('a-entity');
+        body.setAttribute('position', '0 -0.18 0.01');
+        body.setAttribute('text', `value: ${opts.body}; align: center; width: 2.1; color: #b8c3e0; shader: msdf;`);
+
+        // Hover animations
+        g.addEventListener('mouseenter', () => {
+          card.setAttribute('animation__scale', 'property: scale; to: 1.05 1.05 1.05; dur: 140; easing: easeOutQuad');
+          outline.setAttribute('animation__opa', 'property: material.opacity; to: .38; dur: 140; easing: easeOutQuad');
+        });
+        g.addEventListener('mouseleave', () => {
+          card.setAttribute('animation__scale', 'property: scale; to: 1 1 1; dur: 120; easing: easeInQuad');
+          outline.setAttribute('animation__opa', 'property: material.opacity; to: .22; dur: 120; easing: easeInQuad');
+        });
+
+        // Click / gaze select → navigate
+        g.addEventListener('click', () => { window.location.href = opts.href; });
+
+        g.appendChild(outline);
+        g.appendChild(card);
+        g.appendChild(title);
+        g.appendChild(body);
+        return g;
+      }
+
+      const root = document.getElementById('cards');
+
+      // Left card — Hackathon
+      root.appendChild(createCard({
+        position: '-1.25 1.6 -3',
+        color: '#11285e',
+        title: 'Hackathon Presentation',
+        body: 'Bustling demo floor • posters • light chatter',
+        href: '/Symposium/symposium.html'
+      }));
+
+      // Right card — Auditorium
+      root.appendChild(createCard({
+        position: '1.25 1.6 -3',
+        color: '#1b3b2e',
+        title: 'Auditorium Stage',
+        body: 'Spotlights • rows of seats • formal vibe',
+        href: '/auditorium/auditorium.html'
+      }));
+
+      // Subtle floating animation for both cards
+      root.setAttribute('animation', 'property: position; to: 0 0.05 0; dir: alternate; dur: 2200; easing: easeInOutSine; loop: true');
+    </script>
+  </a-scene>
+</body>
+</html>

@@ -7,3 +7,5 @@ venv/
 
 # ignore local certs directory
 /frontend-vr/src/certs/
+
+/backend/data/
