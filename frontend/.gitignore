@@ -79,3 +79,7 @@ ngrok.yml
 # PYTHON VIRTUAL ENVIRONMENTS
 # ==================================
 venv/
+
+.DS_Store
+.AppleDouble
+.LSOverride
