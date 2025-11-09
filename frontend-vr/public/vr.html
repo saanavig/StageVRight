@@ -1,0 +1,204 @@
+<!-- frontend/public/vr.html -->
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Speak Space VR – Classroom</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- A-Frame CDN -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <style>
+        html, body { height: 100%; margin: 0; background: #f6f6f6; }
+        #hud-overlay {
+        position: fixed; left: 12px; top: 12px; z-index: 9;
+        font: 600 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue";
+        background: rgba(0,0,0,.65); color: #fff; padding: 10px 12px; border-radius: 10px;
+        box-shadow: 0 6px 16px rgba(0,0,0,.25);
+        pointer-events: none; max-width: 42ch;
+        }
+        #hud-overlay b{color:#ffe873}
+        #hud-overlay button{
+        pointer-events: auto; display:inline-block; margin-top:8px; margin-right:6px;
+        padding:6px 10px; border-radius:8px; border:0; background:#ffe873; color:#222; font-weight:800; cursor:pointer;
+        }
+        a-scene { width: 100%; height: 100%; }
+    </style>
+    </head>
+    <body>
+    <!-- HUD -->
+    <div id="hud-overlay">
+        <div><b>Pos</b> <span id="hud-pos">—</span></div>
+        <div><b>Rot</b> <span id="hud-rot">—</span></div>
+        <div id="hud-ws"><b>WS:</b> disconnected</div>
+    </div>
+
+    <!-- A-Frame scene -->
+    <a-scene renderer="colorManagement: true" background="color: #ECECEC">
+        <!-- sky set via script too -->
+    </a-scene>
+
+    <script>
+        // ---------- Minimal WS helper (no change to your existing frontend-vr/ws.js) ----------
+        class VRWebSocket {
+        constructor(url){ this.url=url; this.ws=null; this.onOpen=()=>{}; this.onClose=()=>{}; this.onError=()=>{}; this.onMessage=()=>{}; }
+        connect(){
+            this.ws = new WebSocket(this.url);
+            this.ws.binaryType = "arraybuffer";
+            this.ws.addEventListener("open",  () => this.onOpen());
+            this.ws.addEventListener("close", () => this.onClose());
+            this.ws.addEventListener("error", () => this.onError());
+            this.ws.addEventListener("message", (e) => {
+            const msg = typeof e.data === "string" ? e.data : `[binary ${e.data.byteLength}]`;
+            this.onMessage(msg);
+            });
+        }
+        send(data){ if(this.ws && this.ws.readyState===WebSocket.OPEN){ this.ws.send(data); } }
+        }
+
+        // ---------- HUD bindings ----------
+        const hud = document.getElementById('hud-overlay');
+        const hudPos = document.getElementById('hud-pos');
+        const hudRot = document.getElementById('hud-rot');
+        let wsStatus = 'disconnected';
+        let wsLastMsg = '';
+
+        function updateHUD(){
+        const camera = document.querySelector('a-camera, [camera]');
+        if (!camera) return;
+        const pos = camera.object3D.position;
+        const rot = camera.object3D.rotation;
+        hudPos.textContent = `x:${pos.x.toFixed(2)} y:${pos.y.toFixed(2)} z:${pos.z.toFixed(2)}`;
+        hudRot.textContent = `x:${(rot.x*57.2958).toFixed(1)}° y:${(rot.y*57.2958).toFixed(1)}° z:${(rot.z*57.2958).toFixed(1)}°`;
+        const wsDiv = document.getElementById('hud-ws');
+        wsDiv.innerHTML = `<b>WS:</b> ${wsStatus}${wsLastMsg ? `<br><b>Last:</b> ${wsLastMsg}` : ''}`;
+        }
+        AFRAME.registerComponent('hud-updater',{ tick: updateHUD });
+
+        // ---------- Build the classroom scene (mirrors your scene.js) ----------
+        document.addEventListener('DOMContentLoaded', () => {
+        const scene = document.querySelector('a-scene');
+
+        // Floor
+        const floor = document.createElement('a-box');
+        floor.setAttribute('position', '0 0 -5');
+        floor.setAttribute('width', '8');
+        floor.setAttribute('height', '0.1');
+        floor.setAttribute('depth', '10');
+        floor.setAttribute('color', '#b3e5fc');
+        scene.appendChild(floor);
+
+        // Back wall
+        const backWall = document.createElement('a-box');
+        backWall.setAttribute('position', '0 2 -10');
+        backWall.setAttribute('width', '8');
+        backWall.setAttribute('height', '4');
+        backWall.setAttribute('depth', '0.1');
+        backWall.setAttribute('color', '#ffe082');
+        scene.appendChild(backWall);
+
+        // Left wall
+        const leftWall = document.createElement('a-box');
+        leftWall.setAttribute('position', '-4 2 -5');
+        leftWall.setAttribute('width', '0.1');
+        leftWall.setAttribute('height', '4');
+        leftWall.setAttribute('depth', '10');
+        leftWall.setAttribute('color', '#c8e6c9');
+        scene.appendChild(leftWall);
+
+        // Right wall
+        const rightWall = document.createElement('a-box');
+        rightWall.setAttribute('position', '4 2 -5');
+        rightWall.setAttribute('width', '0.1');
+        rightWall.setAttribute('height', '4');
+        rightWall.setAttribute('depth', '10');
+        rightWall.setAttribute('color', '#ffcdd2');
+        scene.appendChild(rightWall);
+
+        // Blackboard
+        const blackboard = document.createElement('a-box');
+        blackboard.setAttribute('position', '0 2.5 -9.95');
+        blackboard.setAttribute('width', '3');
+        blackboard.setAttribute('height', '1');
+        blackboard.setAttribute('depth', '0.05');
+        blackboard.setAttribute('color', '#222');
+        scene.appendChild(blackboard);
+
+        // Podium
+        const podium = document.createElement('a-box');
+        podium.setAttribute('position', '0 0.3 -8.5');
+        podium.setAttribute('width', '0.7');
+        podium.setAttribute('height', '0.6');
+        podium.setAttribute('depth', '0.5');
+        podium.setAttribute('color', '#8d6e63');
+        scene.appendChild(podium);
+
+        // Desks
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 2; col++) {
+            const desk = document.createElement('a-box');
+            desk.setAttribute('position', `${-1.5 + col * 3} 0.3 ${-6.5 + row * 2}`);
+            desk.setAttribute('width', '1.2');
+            desk.setAttribute('height', '0.6');
+            desk.setAttribute('depth', '0.7');
+            desk.setAttribute('color', row % 2 === 0 ? '#fff9c4' : '#ffe0b2');
+            scene.appendChild(desk);
+            }
+        }
+
+        // Window
+        const windowRect = document.createElement('a-box');
+        windowRect.setAttribute('position', '-3.95 2.5 -7');
+        windowRect.setAttribute('width', '0.05');
+        windowRect.setAttribute('height', '1.2');
+        windowRect.setAttribute('depth', '2');
+        windowRect.setAttribute('color', '#81d4fa');
+        scene.appendChild(windowRect);
+
+        // Sky
+        const sky = document.createElement('a-sky');
+        sky.setAttribute('color', '#ECECEC');
+        scene.appendChild(sky);
+
+        // Label
+        const label = document.createElement('a-text');
+        label.setAttribute('value', 'Minimal Classroom');
+        label.setAttribute('position', '0 3.8 -7');
+        label.setAttribute('align', 'center');
+        label.setAttribute('color', '#333');
+        label.setAttribute('width', '6');
+        scene.appendChild(label);
+
+        // Camera
+        const camera = document.createElement('a-entity');
+        camera.setAttribute('camera', '');
+        camera.setAttribute('position', '0 1.6 0');
+        camera.setAttribute('wasd-controls', 'acceleration: 10');
+        camera.setAttribute('look-controls', '');
+        camera.setAttribute('hud-updater', '');
+        scene.appendChild(camera);
+        });
+
+        // ---------- WS connect (port override via ?wsPort=####) ----------
+        (function connectWS(){
+        const params = new URLSearchParams(location.search);
+        const port = params.get('wsPort') || '8000';
+        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+        const url = `${proto}://${location.hostname}:${port}/ws`;
+
+        const ws = new VRWebSocket(url);
+        ws.onOpen = () => { wsStatus = 'connected'; ws.send(JSON.stringify({type:'test', msg:'Hello from /vr.html'})); };
+        ws.onClose = () => { wsStatus = 'disconnected'; };
+        ws.onError = () => { wsStatus = 'error'; };
+        ws.onMessage = (msg) => { wsLastMsg = msg; };
+        ws.connect();
+
+        // HUD buttons
+        const hud = document.getElementById('hud-overlay');
+        const testBtn = document.createElement('button');
+        testBtn.textContent = 'Send WS Test';
+        testBtn.onclick = () => ws.send(JSON.stringify({type:'test', msg:'Button test message'}));
+        hud.appendChild(testBtn);
+        })();
+    </script>
+</body>
+</html>

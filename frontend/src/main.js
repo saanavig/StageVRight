@@ -63,7 +63,12 @@ function renderSession() {
       <div class="card live">
         <div class="live-inner center">
           <div class="live-stage" id="vrPlaceholder">
-            <p class="live-msg">VR scene placeholder — will connect to headset later.</p>
+            <iframe
+              src="http://localhost:5174/vr.html"
+              title="Speak Space VR scene"
+              class="vr-frame"
+              allow="xr-spatial-tracking; microphone; fullscreen; accelerometer; gyroscope"
+            ></iframe>
           </div>
           <div class="controls">
             <button id="simulateBtn" class="btn ok">View Latest Results</button>
@@ -88,6 +93,19 @@ function renderSession() {
       </div>
     </section>
   `
+
+  // quick inline style for iframe (can move to style.css)
+  const style = document.createElement('style')
+  style.textContent = `
+    .vr-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      border-radius: var(--radius);
+    }
+    .live-stage { padding: 0; }
+  `
+  document.head.appendChild(style)
 
   $('#simulateBtn').addEventListener('click', async () => {
     const btn = $('#simulateBtn')
@@ -150,7 +168,6 @@ async function updateHistoryFromBackend() {
         const result = await res2.json()
         const metrics = result.metrics || result
 
-        // Convert filename (20251109_015300) → readable “Month Day, Year HH:MM:SS”
         const raw = filename.replace('.json', '')
         const [dateStr, timeStr] = raw.split('_')
         const year = dateStr.slice(0, 4)
