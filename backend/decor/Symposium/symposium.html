@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SBU Hackathon — Symposium Hall</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:,"><!-- stop favicon 404 -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+  <style>
+    html,body{margin:0;height:100%;background:#000;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    #hud{position:fixed;left:12px;bottom:12px;color:#eee;background:rgba(0,0,0,.45);
+         padding:10px 12px;border:1px solid #333;border-radius:10px;font-size:12px}
+  </style>
+  <script>
+    /* Q/E vertical movement */
+    AFRAME.registerComponent('qe-elevator',{
+      schema:{speed:{default:2}},
+      init(){
+        this.keys={};
+        window.addEventListener('keydown',e=>this.keys[e.code]=true);
+        window.addEventListener('keyup',e=>this.keys[e.code]=false);
+      },
+      tick(t,dt){
+        const r=this.el.object3D, s=(dt/1000)*this.data.speed;
+        if(this.keys['KeyQ']) r.position.y+=s;
+        if(this.keys['KeyE']) r.position.y-=s;
+        if(r.position.y<1.0) r.position.y=1.0;
+      }
+    });
+
+    /* Fit GLB to height and sit on floor */
+    AFRAME.registerComponent('fit-to-height', {
+      schema:{meters:{default:2.2}, ground:{default:true}},
+      init(){
+        this.el.addEventListener('model-loaded', ()=>{
+          const THREE = AFRAME.THREE;
+          const obj = this.el.getObject3D('mesh');
+          if(!obj) return;
+          const box = new THREE.Box3().setFromObject(obj);
+          const size = new THREE.Vector3();
+          box.getSize(size);
+          const h = size.y || 1;
+          const s = this.data.meters / h;
+          this.el.object3D.scale.setScalar(s);
+          if(this.data.ground){
+            this.el.object3D.updateWorldMatrix(true,true);
+            const worldBox = new THREE.Box3().setFromObject(this.el.object3D);
+            const minY = worldBox.min.y;
+            this.el.object3D.position.y -= minY; // feet to floor
+          }
+        });
+      }
+    });
+
+    /* Simple furniture/props */
+    AFRAME.registerComponent('table-top',{
+      schema:{w:{default:0.9},d:{default:0.6},h:{default:0.9},wood:{default:'#b8855a'},leg:{default:'#2b2b2b'}},
+      init(){
+        const s=this.data, el=this.el;
+        const top=document.createElement('a-box');
+        top.setAttribute('color',s.wood);
+        top.setAttribute('width',s.w);
+        top.setAttribute('depth',s.d);
+        top.setAttribute('height',0.06);
+        top.setAttribute('position', `0 ${s.h} 0`);
+        el.appendChild(top);
+
+        [[-.4,-.25],[.4,-.25],[-.4,.25],[.4,.25]].forEach(p=>{
+          const leg=document.createElement('a-box');
+          leg.setAttribute('color',s.leg);
+          leg.setAttribute('width',0.06);
+          leg.setAttribute('depth',0.06);
+          leg.setAttribute('height',s.h);
+          leg.setAttribute('position', `${p[0]} ${s.h/2} ${p[1]}`);
+          el.appendChild(leg);
+        });
+      }
+    });
+
+    AFRAME.registerComponent('prop-laptop',{
+      schema:{y:{default:0.935}},
+      init(){
+        const y=this.data.y;
+        const base=document.createElement('a-box');
+        base.setAttribute('color','#3b3f45');
+        base.setAttribute('width',0.32);
+        base.setAttribute('depth',0.23);
+        base.setAttribute('height',0.02);
+        base.setAttribute('position', `0 ${y} -0.05`);
+
+        const screen=document.createElement('a-plane');
+        screen.setAttribute('color','#161a1f');
+        screen.setAttribute('width',0.32);
+        screen.setAttribute('height',0.20);
+        screen.setAttribute('position', `0 ${y+0.115} -0.15`);
+        screen.setAttribute('rotation','-70 0 0');
+
+        this.el.appendChild(base);
+        this.el.appendChild(screen);
+      }
+    });
+
+    AFRAME.registerComponent('prop-rover',{
+      schema:{y:{default:0.95}},
+      init(){
+        const y=this.data.y;
+        const body=document.createElement('a-box');
+        body.setAttribute('color','#2e2f33');
+        body.setAttribute('width',0.28);
+        body.setAttribute('height',0.08);
+        body.setAttribute('depth',0.18);
+        body.setAttribute('position', `0 ${y} 0`);
+
+        const sensor=document.createElement('a-cylinder');
+        sensor.setAttribute('color','#ffcc66');
+        sensor.setAttribute('radius',0.02);
+        sensor.setAttribute('height',0.04);
+        sensor.setAttribute('position', `0 ${y+0.07} 0.09`);
+        sensor.setAttribute('rotation','90 0 0');
+
+        [-.1,.1].forEach(x=>{
+          [-.09,.09].forEach(z=>{
+            const w=document.createElement('a-torus');
+            w.setAttribute('color','#202226');
+            w.setAttribute('radius',0.045);
+            w.setAttribute('radius-tubular',0.015);
+            w.setAttribute('position', `${x} ${y-0.02} ${z}`);
+            w.setAttribute('rotation','90 0 0');
+            this.el.appendChild(w);
+          });
+        });
+
+        this.el.appendChild(body);
+        this.el.appendChild(sensor);
+      }
+    });
+
+    AFRAME.registerComponent('prop-vr',{
+      schema:{y:{default:0.95}},
+      init(){
+        const y=this.data.y;
+        const visor=document.createElement('a-box');
+        visor.setAttribute('color','#1f2329');
+        visor.setAttribute('width',0.22);
+        visor.setAttribute('height',0.07);
+        visor.setAttribute('depth',0.09);
+        visor.setAttribute('position', `0 ${y} 0`);
+
+        const strap=document.createElement('a-torus');
+        strap.setAttribute('color','#2e3238');
+        strap.setAttribute('radius',0.12);
+        strap.setAttribute('radius-tubular',0.018);
+        strap.setAttribute('rotation','0 90 0');
+        strap.setAttribute('position', `0 ${y} 0`);
+
+        this.el.appendChild(visor);
+        this.el.appendChild(strap);
+      }
+    });
+  </script>
+</head>
+<body>
+  <div id="hud">W/A/S/D move • Q/E up/down • R reset height</div>
+
+  <a-scene renderer="antialias:true; physicallyCorrectLights:true" background="color:#0f1011">
+    <a-assets timeout="15000">
+      <!-- MODELS -->
+      <a-asset-item id="p3291" src="3291.glb"></a-asset-item>
+      <a-asset-item id="p5451" src="5451.glb"></a-asset-item>
+      <a-asset-item id="pAndrew" src="andrew_sink_-_full_color_selfie_3d_scan.glb"></a-asset-item>
+      <a-asset-item id="pDavid" src="david_at_gsp_connect_2018.glb"></a-asset-item>
+      <a-asset-item id="pKen" src="free_049_ken.glb"></a-asset-item>
+      <a-asset-item id="pVika" src="vika_cad.glb"></a-asset-item>
+      <a-asset-item id="rover" src="Round Rover.glb"></a-asset-item>
+      <!-- safe fallback for pPlaid -->
+      <a-asset-item id="pPlaid" src="3291.glb"></a-asset-item>
+
+      <!-- AUDIO -->
+      <audio id="aud-muffled-chatter-23025" src="muffled-chatter-23025.mp3" preload="auto"></audio>
+      <audio id="aud-arnav" src="arnav.mp3" preload="auto"></audio>
+      <audio id="aud-saanavi" src="saanavi.mp3" preload="auto"></audio>
+      <audio id="aud-cough" src="female-cough-149493.mp3" preload="auto"></audio>
+      <audio id="aud-hmmm" src="hmmm-question-2-6812.mp3" preload="auto"></audio>
+      <audio id="aud-adi" src="adi.mp3" preload="auto"></audio>
+      <audio id="aud-interesting" src="Interesting%20nice.mp3" preload="auto"></audio>
+    </a-assets>
+
+    <!-- Lights -->
+    <a-entity light="type:ambient; intensity:0.65; color:#ffffff"></a-entity>
+    <a-entity light="type:directional; intensity:1.0; color:#fff" position="2 6 2"></a-entity>
+    <a-entity light="type:directional; intensity:0.55; color:#fff" position="-3 6 -2"></a-entity>
+
+    <!-- Floor & walls & header -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="24" height="6" color="#c27a2a"></a-plane>
+
+    <a-box position="-9 1.5 -3.1" width="6" height="3" depth="0.2" color="#e5d7c5"></a-box>
+    <a-box position="-3 1.5 -3.1" width="6" height="3" depth="0.2" color="#5a3b25"></a-box>
+    <a-box position="3 1.5 -3.1" width="6" height="3" depth="0.2" color="#a25f2a"></a-box>
+    <a-box position="9 1.5 -3.1" width="6" height="3" depth="0.2" color="#d0a96b"></a-box>
+
+    <a-box position="-9 1.5 3.1" width="6" height="3" depth="0.2" color="#e9e4df"></a-box>
+    <a-box position="-3 1.5 3.1" width="6" height="3" depth="0.2" color="#6d6d6d"></a-box>
+    <a-box position="3 1.5 3.1" width="6" height="3" depth="0.2" color="#c27a2a"></a-box>
+    <a-box position="9 1.5 3.1" width="6" height="3" depth="0.2" color="#e5d7c5"></a-box>
+
+    <a-box position="-12.1 1.5 0"  width="0.2" height="3" depth="6.2" color="#5a3b25"></a-box>
+    <a-box position="12.1 1.5 0"   width="0.2" height="3" depth="6.2" color="#c27a2a"></a-box>
+    <a-box position="0 3.05 0"     width="24"  height="0.1" depth="6.2" color="#f5f3ee"></a-box>
+
+    <a-plane position="-12.01 1.6 -1.5" rotation="0 90 0"  width="2.2" height="1.2" color="#8fb5d1" material="opacity:0.9; roughness:0.2"></a-plane>
+    <a-plane position="-12.01 1.6 0.5"  rotation="0 90 0"  width="2.2" height="1.2" color="#8fb5d1" material="opacity:0.9; roughness:0.2"></a-plane>
+    <a-plane position="12.01 1.6 -0.5"  rotation="0 -90 0" width="2.2" height="1.2" color="#8fb5d1" material="opacity:0.9; roughness:0.2"></a-plane>
+
+    <a-plane position="0 2.2 3.08" rotation="0 180 0" width="9" height="1.2" color="#5a3b25"></a-plane>
+    <a-text value="SBU Hackathon" position="0 2.2 3.09" rotation="0 180 0" align="center" color="#e9e4df" width="11"></a-text>
+
+    <!-- Tables and props -->
+    <a-entity id="showcaseTable" position="0 0 0">
+      <a-entity table-top="wood:#d0a96b"></a-entity>
+      <a-entity prop-laptop></a-entity>
+      <a-entity gltf-model="#rover" fit-to-height="meters:0.55" position="0.0 0.98 0.20" rotation="0 0 0" shadow="cast:true"></a-entity>
+    </a-entity>
+
+    <a-entity position="-6 0 -1.2">
+      <a-entity table-top="wood:#e5d7c5"></a-entity>
+      <a-entity prop-vr></a-entity>
+    </a-entity>
+
+    <a-entity id="robotPropTable" position="-2 0 -1.2">
+      <a-entity table-top="wood:#a25f2a"></a-entity>
+      <a-entity prop-rover></a-entity>
+    </a-entity>
+
+    <a-entity id="secondGroupTable" position="2 0 -1.2">
+      <a-entity table-top="wood:#c27a2a"></a-entity>
+      <a-entity prop-laptop></a-entity>
+    </a-entity>
+
+    <a-entity position="6 0 -1.2">
+      <a-entity table-top="wood:#e9e4df"></a-entity>
+      <a-entity prop-laptop></a-entity>
+    </a-entity>
+
+    <a-entity position="-6 0 0.8">
+      <a-entity table-top="wood:#6d6d6d"></a-entity>
+      <a-entity prop-laptop></a-entity>
+    </a-entity>
+
+    <a-entity position="6 0 0.8">
+      <a-entity table-top="wood:#5a3b25"></a-entity>
+      <a-entity prop-vr></a-entity>
+    </a-entity>
+
+    <!-- People -->
+    <a-entity gltf-model="#pDavid"  fit-to-height="meters:2.2" position="-0.7 0 -1.0" rotation="0 180 0" shadow="cast:true"
+              animation__nod="property: rotation; to: 5 180 0; dir: alternate; dur: 1500; loop: true; easing: linear"></a-entity>
+    <a-entity gltf-model="#pVika"   fit-to-height="meters:2.2" position="0 0 -1.2"   rotation="0 180 0" shadow="cast:true"
+              animation__turn="property: rotation; to: 0 190 0; dir: alternate; dur: 3000; loop: true; easing: linear"></a-entity>
+    <a-entity gltf-model="#pKen"    fit-to-height="meters:2.2" position="0.7 0 -1.0" rotation="0 180 0" shadow="cast:true"
+              animation__fidget="property: rotation; to: 2 178 -1; dir: alternate; dur: 4000; loop: true; easing: easeInOutSine"></a-entity>
+    <a-entity gltf-model="#p3291"   fit-to-height="meters:2.2" position="1.2 0 -0.80" rotation="0 0 0"   shadow="cast:true"
+              animation__tilt="property: rotation; to: 0 0 8; dir: alternate; dur: 2500; loop: true; easing: linear"></a-entity>
+    <a-entity gltf-model="#p5451"   fit-to-height="meters:2.2" position="2.0 0 -0.80" rotation="0 0 0"   shadow="cast:true"></a-entity>
+    <a-entity gltf-model="#pAndrew" fit-to-height="meters:2.2" position="2.8 0 -0.80" rotation="0 0 0"   shadow="cast:true"
+              animation__cough="property: rotation; to: 10 0 0; dir: alternate; dur: 500; loop: true; easing: easeInOutQuad"></a-entity>
+
+    <a-entity gltf-model="#pPlaid"  fit-to-height="meters:2.2" position="-10 0 -2.0" rotation="0 90 0" shadow="cast:true"
+              animation__walk="property: position; to: 10 0 -2.0; dir: alternate; dur: 15000; loop: true; easing: linear"
+              animation__turn="property: rotation; to: 0 -90 0; dir: alternate; dur: 15000; loop: true; easing: linear"></a-entity>
+
+    <!-- Rig -->
+    <a-entity id="rig" position="0 1.6 2.8" movement-controls="fly:true;speed:0.12">
+      <a-entity camera look-controls wasd-controls qe-elevator></a-entity>
+    </a-entity>
+  </a-scene>
+
+  <!-- Scripts AFTER the scene -->
+  <script>
+    // R = reset height
+    window.addEventListener('keydown', e => {
+      if (e.code === 'KeyR') {
+        const rig = document.querySelector('#rig');
+        if (!rig) return;
+        const p = rig.getAttribute('position');
+        rig.setAttribute('position', `${p.x} 1.6 ${p.z}`);
+      }
+    });
+
+    // Audio: random order, 4s max each, >=5s gap, volume 0.3, start on first user gesture
+    (function (){
+      let started = false;
+
+      function shuffle(arr){
+        for (let i = arr.length - 1; i > 0; i--){
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      function startSequence(){
+        if (started) return;
+        started = true;
+
+        const ids = [
+          'aud-muffled-chatter-23025','aud-arnav','aud-saanavi',
+          'aud-cough','aud-hmmm','aud-adi','aud-interesting'
+        ];
+
+        const clips = shuffle(ids.slice())
+          .map(id => document.getElementById(id))
+          .filter(Boolean);
+
+        if (!clips.length) return;
+
+        const SECONDS_PER_CLIP = 4;
+        const GAP_BETWEEN_STARTS = 5; // ensures >=5s separation
+        const VOLUME = 0.3;
+
+        clips.forEach(a => { try { a.volume = VOLUME; } catch(_) {} });
+
+        clips.forEach((a,i)=>{
+          setTimeout(()=>{
+            try {
+              a.pause(); a.currentTime = 0; a.volume = VOLUME;
+              const p = a.play();
+              if (p && p.catch) p.catch(()=>{});
+            } catch(_) {}
+            setTimeout(()=>{ try { a.pause(); a.currentTime = 0; } catch(_) {} }, SECONDS_PER_CLIP*1000);
+          }, i*GAP_BETWEEN_STARTS*1000);
+        });
+      }
+
+      ['click','keydown','touchstart'].forEach(ev=>{
+        window.addEventListener(ev, startSequence, {once:true});
+      });
+    })();
+  </script>
+</body>
+</html>
