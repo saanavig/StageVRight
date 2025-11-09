@@ -5,17 +5,40 @@
   <title>SpeakSpaceVR — Choose Environment (3D)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <!-- A-Frame extras controls provide movement-controls + thumbstick support -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.0.0/dist/aframe-extras.controls.min.js"></script>
+  <!-- Teleport controls for VR movement -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe-teleport-controls@0.8.2/dist/aframe-teleport-controls.min.js"></script>
+  <script type="module" src="/src/hud-recording.js"></script>
   <style>
     html,body{margin:0;height:100%;background:#000;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
     .fallback{position:fixed;inset:auto 12px 12px auto;background:rgba(0,0,0,.55);color:#eee;
               padding:8px 10px;border:1px solid #333;border-radius:10px;font-size:12px}
     .ui{position:fixed;left:12px;bottom:12px;color:#cfe8ff;background:rgba(0,0,0,.45);
         padding:10px 12px;border:1px solid #333;border-radius:10px;font-size:12px}
+    #hud-overlay{position:fixed;top:12px;right:12px;min-width:200px;max-width:240px;color:#eaf2ff;
+                 background:rgba(7,17,38,.68);border:1px solid rgba(95,151,206,.55);border-radius:12px;
+                 padding:12px;font-size:12px;line-height:1.45;backdrop-filter:blur(4px);
+                 box-shadow:0 6px 18px rgba(0,0,0,.35);pointer-events:auto;z-index:10}
+    #hud-overlay .hud-title{font-size:12px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px;
+                            color:#8ecbff}
+    #hud-overlay .hud-row{display:flex;justify-content:space-between;gap:12px;margin-bottom:4px;
+                          font-variant-numeric:tabular-nums}
+    #hud-overlay button{width:100%;margin-top:8px;padding:6px 10px;font-size:11px;border-radius:8px;
+                        border:1px solid rgba(143,215,255,.45);background:rgba(22,52,96,.7);color:#eaf2ff;
+                        cursor:pointer}
+    #hud-overlay button:disabled{opacity:.5;cursor:default}
   </style>
 </head>
 <body>
   <!-- Desktop tips -->
   <div class="ui">WASD/Arrow keys to move • Mouse to look • Gaze/Click to select • Press “Enter VR” for headset</div>
+  <!-- HUD overlay for position/rotation + recording controls -->
+  <div id="hud-overlay">
+    <div class="hud-title">HUD · press H to hide</div>
+    <div class="hud-row"><span>Pos</span><span id="hud-pos">0,0,0</span></div>
+    <div class="hud-row"><span>Rot</span><span id="hud-rot">0°,0°,0°</span></div>
+  </div>
 
   <!-- Fallback links (show if JS fails) -->
   <noscript>
@@ -31,13 +54,11 @@
     <a-entity light="type: ambient; intensity: 0.35; color: #cfe8ff"></a-entity>
     <a-entity light="type: directional; intensity: 1.0; color: #ffffff" position="2 4 -2"></a-entity>
 
-    <!-- Ground + subtle grid -->
-    <a-entity geometry="primitive: plane; width: 30; height: 30"
-              material="color: #0e1a3f; metalness: 0.1; roughness: 0.9"
-              rotation="-90 0 0" position="0 0 0"></a-entity>
-    <a-entity geometry="primitive: plane; width: 30; height: 30"
-              material="src: https://cdn.jsdelivr.net/gh/mrdoob/three.js@r155/examples/textures/square.png; repeat: 60 60; transparent: true; opacity: .08"
-              rotation="-90 0 0" position="0 0.01 0"></a-entity>
+  <!-- Ground -->
+  <a-entity id="ground" geometry="primitive: plane; width: 30; height: 30"
+        material="color: #0e1a3f; metalness: 0.1; roughness: 0.9"
+        rotation="-90 0 0" position="0 0 0"
+        teleport-target></a-entity>
 
     <!-- Title banner -->
     <a-entity position="0 2.7 -3">
@@ -50,8 +71,10 @@
     <a-entity id="cards"></a-entity>
 
     <!-- Player rig with gaze and mouse cursor -->
-    <a-entity id="rig" position="0 1.6 3">
-      <a-entity camera look-controls wasd-controls 
+  <a-entity id="rig" position="0 1.6 3"
+            movement-controls="controls: keyboard, gamepad; fly: false; speed: 0.8">
+      <!-- Camera for desktop/VR, with mouse and gaze cursor -->
+      <a-entity id="head" camera look-controls
                 cursor="rayOrigin: mouse; fuse: false"
                 raycaster="objects: .pickable">
       </a-entity>
@@ -61,8 +84,11 @@
                 geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
                 material="color: white; shader: flat"></a-entity>
       <!-- Laser controls for Quest controllers (both hands) -->
-      <a-entity laser-controls="hand: right" raycaster="objects: .pickable"></a-entity>
-      <a-entity laser-controls="hand: left" raycaster="objects: .pickable"></a-entity>
+  <a-entity laser-controls="hand: right" raycaster="objects: .pickable"></a-entity>
+  <a-entity laser-controls="hand: left"
+        line="color: #59e0c5; opacity: 0.75"
+        raycaster="far: 12; objects: #ground"
+        teleport-controls="cameraRig: #rig; teleportOrigin: #head; button: trigger; collisionEntities: #ground;"></a-entity>
     </a-entity>
 
     <!-- Sky gradient (simple two-layer trick) -->
@@ -71,6 +97,34 @@
               material="color: #051124; side: back; opacity: .6"></a-entity>
 
     <script>
+      // Component: navigate to a new URL from VR, exiting immersive mode first
+      AFRAME.registerComponent('navigate-on-activate', {
+        schema: { href: { type: 'string' } },
+        init() {
+          this.isNavigating = false;
+          this.handleActivate = this.handleActivate.bind(this);
+          const events = ['click', 'triggerdown', 'abuttondown', 'bbuttondown', 'xbuttondown', 'ybuttondown'];
+          events.forEach(evt => this.el.addEventListener(evt, this.handleActivate));
+        },
+        remove() {
+          const events = ['click', 'triggerdown', 'abuttondown', 'bbuttondown', 'xbuttondown', 'ybuttondown'];
+          events.forEach(evt => this.el.removeEventListener(evt, this.handleActivate));
+        },
+        handleActivate(evt) {
+          if (this.isNavigating || !this.data.href) { return; }
+          this.isNavigating = true;
+          const go = () => window.location.assign(this.data.href);
+          const scene = this.el.sceneEl;
+          if (scene && scene.is('vr-mode')) {
+            scene.exitVR();
+            setTimeout(go, 400);
+          } else {
+            go();
+          }
+          if (evt && evt.stopPropagation) { evt.stopPropagation(); }
+        }
+      });
+
       // Utility to create a hover-animated, clickable card
       function createCard(opts){
         const g = document.createElement('a-entity');
@@ -83,7 +137,7 @@
         clickPlane.setAttribute('material', 'color: #fff; opacity: 0; transparent: true;');
         clickPlane.setAttribute('position', '0 0 0.01');
         clickPlane.setAttribute('class', 'pickable');
-        clickPlane.addEventListener('click', () => { window.location.href = opts.href; });
+  clickPlane.setAttribute('navigate-on-activate', `href: ${opts.href}`);
         g.appendChild(clickPlane);
 
         // Card plane
@@ -142,7 +196,7 @@
         position: '1.25 1.6 -3',
         color: '#1b3b2e',
         title: 'Auditorium Stage',
-        body: 'Spotlights • rows of seats • formal vibe',
+        body: 'Spotlights • rmal vibe',
         href: '/src/auditorium/auditorium.html'
       }));
 
