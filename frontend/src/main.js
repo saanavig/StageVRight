@@ -1,5 +1,5 @@
 /* ==========================================
-   StageFreight – Practice Interface (Simplified: No Environment)
+   Speak Space VR – Practice Interface
    ========================================== */
 import './style.css'
 
@@ -26,7 +26,7 @@ appRoot.innerHTML = `
   <main id="page"></main>
 
   <footer class="site-ftr center">
-    <small>© ${new Date().getFullYear()} Speak Safe VR Practice Platform</small>
+    <small>© ${new Date().getFullYear()} Speak Space VR Practice Platform</small>
   </footer>
 `
 
@@ -192,11 +192,15 @@ async function renderHistory() {
     const list = window.latestHistory
       .map(
         (s) => `
-        <li>
+        <li class="history-item">
           <div class="minirow">
             <strong>${s.date}</strong>
           </div>
-          <p class="summary">${s.feedback_summary}</p>
+
+          <div class="feedback-summary">
+            <p><em>“${s.feedback_summary || 'No feedback summary available.'}”</em></p>
+          </div>
+
           <div class="metrics-mini">
             <span>🎯 Overall: ${s.overall_score}</span>
             <span>🗣️ Fluency: ${s.fluency_score}</span>
