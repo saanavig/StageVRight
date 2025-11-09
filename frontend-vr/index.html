@@ -84,8 +84,8 @@
                 geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
                 material="color: white; shader: flat"></a-entity>
       <!-- Laser controls for Quest controllers (both hands) -->
-  <a-entity laser-controls="hand: right" raycaster="objects: .pickable"></a-entity>
-  <a-entity laser-controls="hand: left"
+  <a-entity id="right-controller" laser-controls="hand: right" raycaster="objects: .pickable"></a-entity>
+  <a-entity id="left-controller" laser-controls="hand: left"
         line="color: #59e0c5; opacity: 0.75"
         raycaster="far: 12; objects: #ground"
         teleport-controls="cameraRig: #rig; teleportOrigin: #head; button: trigger; collisionEntities: #ground;"></a-entity>
