@@ -33,6 +33,6 @@ htmlcov/
 Thumbs.db
 .vscode/
 .idea/
-*.code-workspacebackend/decor/Symposium/3291.glb
+*.code-workspace
 
 backend/decor/Symposium/3291.glb
