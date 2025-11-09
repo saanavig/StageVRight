@@ -1,0 +1,48 @@
+# Frontend-VR Start Guide
+
+This guide explains how to start all three servers required for local VR development with secure WebSocket (WSS) support.
+
+## 1. Start the Python WebSocket Server
+
+From the `frontend-vr` directory:
+
+```sh
+python3 server/ws_server.py
+```
+
+## 2. Start the HTTPS Vite Dev Server
+
+From the `frontend-vr` directory:
+
+```sh
+npm run dev -- --host
+```
+
+- This will serve the frontend over HTTPS using the local mkcert certificates.
+
+## 3. Start the Local SSL Proxy (WSS → WS)
+
+From the `frontend-vr` directory:
+
+```sh
+local-ssl-proxy --source 8001 --target 8000 \
+  --cert ./src/certs/192.168.4.39+2.pem \
+  --key  ./src/certs/192.168.4.39+2-key.pem
+```
+
+- Adjust the cert/key filenames if your LAN IP or certs are different.
+- This proxies WSS (port 8001) to the backend WS server (port 8000).
+
+---
+
+**Order does not matter, but all three must be running for full functionality.**
+
+- Access the frontend at: `https://<your-lan-ip>:5173/`
+- The VR frontend will connect to the backend via WSS on port 8001.
+
+---
+
+## Troubleshooting
+- If you see WebSocket errors, ensure all servers are running and ports/certs match.
+- Restart the dev server and browser after any config changes.
+- For Meta Quest, use your LAN IP in the browser.

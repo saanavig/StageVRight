@@ -55,7 +55,14 @@ def analyze():
     except Exception as e:
         print("❌ Error during analysis:", e)
         return jsonify({"error": str(e)}), 500
-
+    
+@app.route("/sessions", methods=["GET"])
+def list_sessions():
+    """List all saved session files."""
+    session_dir = os.path.join(CURRENT_DIR, "sessions")
+    os.makedirs(session_dir, exist_ok=True)
+    files = sorted(os.listdir(session_dir))
+    return jsonify({"sessions": files})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
