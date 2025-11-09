@@ -37,12 +37,17 @@ def analyze():
 
         result = audio_transcribe.run_pipeline(tmp_path)
 
-        os.makedirs("data/sessions", exist_ok=True)
+        session_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "sessions"))
+        os.makedirs(session_dir, exist_ok=True)
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        save_path = os.path.join("data/sessions", f"{timestamp}.json")
+        save_path = os.path.join(session_dir, f"{timestamp}.json")
+
         with open(save_path, "w") as f:
             json.dump(result, f, indent=2)
-        print(f"Session saved at: {save_path}")
+
+        print(f"✅ Session saved at: {save_path}")
+
 
         os.remove(tmp_path)
         return jsonify(result), 200
