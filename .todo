@@ -1,0 +1,4 @@
+Todo:
+- ~Implement frontend session metadata and analyze trigger~ (done)
+- ~Upgrade ws_server.py to save chunks and run analysis~ (done)
+- Verify end-to-end chunk flow and analysis output
