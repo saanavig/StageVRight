@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <title>SBU Hackathon — Symposium Hall</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:,"><!-- stop favicon 404 -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
   <style>
@@ -16,20 +17,24 @@
   /* Q/E vertical movement */
   AFRAME.registerComponent('qe-elevator',{
     schema:{speed:{default:2}},
-    init(){this.keys={};window.addEventListener('keydown',e=>this.keys[e.code]=true);window.addEventListener('keyup',e=>this.keys[e.code]=false)},
+    init(){ this.keys={};
+      window.addEventListener('keydown',e=>this.keys[e.code]=true);
+      window.addEventListener('keyup',e=>this.keys[e.code]=false);
+    },
     tick(t,dt){
-      const r=this.el.object3D,s=(dt/1000)*this.data.speed;
+      const r=this.el.object3D, s=(dt/1000)*this.data.speed;
       if(this.keys['KeyQ']) r.position.y+=s;
       if(this.keys['KeyE']) r.position.y-=s;
       if(r.position.y<1.0) r.position.y=1.0;
     }
   });
 
-  /* Fit any GLB to a target height and rest on the floor */
+  /* Fit GLB to height and rest on floor (robust THREE access) */
   AFRAME.registerComponent('fit-to-height', {
     schema:{meters:{default:2.2}, ground:{default:true}},
     init(){
       this.el.addEventListener('model-loaded', ()=>{
+        const THREE = AFRAME.THREE;                      // <— important
         const obj = this.el.getObject3D('mesh'); if(!obj) return;
         const box = new THREE.Box3().setFromObject(obj);
         const size = new THREE.Vector3(); box.getSize(size);
@@ -147,14 +152,23 @@
 <a-scene renderer="antialias:true; physicallyCorrectLights:true" background="color:#0f1011">
 
   <a-assets timeout="15000">
+    <!-- MODELS -->
     <a-asset-item id="p3291"    src="3291.glb"></a-asset-item>
     <a-asset-item id="p5451"    src="5451.glb"></a-asset-item>
     <a-asset-item id="pAndrew"  src="andrew_sink_-_full_color_selfie_3d_scan.glb"></a-asset-item>
     <a-asset-item id="pDavid"   src="david_at_gsp_connect_2018.glb"></a-asset-item>
     <a-asset-item id="pKen"     src="free_049_ken.glb"></a-asset-item>
-    <a-asset-item id="pPlaid"   src="red_and_black_plaid_christmas_suit.glb"></a-asset-item>
     <a-asset-item id="pVika"    src="vika_cad.glb"></a-asset-item>
     <a-asset-item id="rover"    src="Round Rover.glb"></a-asset-item>
+
+    <!-- AUDIO (filenames must exist beside this HTML) -->
+    <audio id="aud-arnav"        src="arnav.mp3" preload="auto"></audio>
+    <audio id="aud-saanavi"      src="saanavi.mp3" preload="auto"></audio>
+    <audio id="aud-crowd"        src="crowd-chatter-25846.mp3" preload="auto"></audio>
+    <audio id="aud-cough"        src="female-cough-149493.mp3" preload="auto"></audio>
+    <audio id="aud-hmmm"         src="hmmm-question-2-6812.mp3" preload="auto"></audio>
+    <audio id="aud-adi"          src="adi.mp3" preload="auto"></audio>
+    <audio id="aud-interesting"  src="Interesting%20nice.mp3" preload="auto"></audio>
   </a-assets>
 
   <a-entity light="type:ambient; intensity:0.65; color:#ffffff"></a-entity>
@@ -165,22 +179,22 @@
 
   <a-box position="-9 1.5 -3.1" width="6" height="3" depth="0.2" color="#e5d7c5"></a-box>
   <a-box position="-3 1.5 -3.1" width="6" height="3" depth="0.2" color="#5a3b25"></a-box>
-  <a-box position=" 3 1.5 -3.1" width="6" height="3" depth="0.2" color="#a25f2a"></a-box>
-  <a-box position=" 9 1.5 -3.1" width="6" height="3" depth="0.2" color="#d0a96b"></a-box>
+  <a-box position="3 1.5 -3.1"  width="6" height="3" depth="0.2" color="#a25f2a"></a-box>
+  <a-box position="9 1.5 -3.1"  width="6" height="3" depth="0.2" color="#d0a96b"></a-box>
 
   <a-box position="-9 1.5 3.1" width="6" height="3" depth="0.2" color="#e9e4df"></a-box>
   <a-box position="-3 1.5 3.1" width="6" height="3" depth="0.2" color="#6d6d6d"></a-box>
-  <a-box position=" 3 1.5 3.1" width="6" height="3" depth="0.2" color="#c27a2a"></a-box>
-  <a-box position=" 9 1.5 3.1" width="6" height="3" depth="0.2" color="#e5d7c5"></a-box>
+  <a-box position="3 1.5 3.1"  width="6" height="3" depth="0.2" color="#c27a2a"></a-box>
+  <a-box position="9 1.5 3.1"  width="6" height="3" depth="0.2" color="#e5d7c5"></a-box>
 
   <a-box position="-12.1 1.5 0" width="0.2" height="3" depth="6.2" color="#5a3b25"></a-box>
-  <a-box position=" 12.1 1.5 0" width="0.2" height="3" depth="6.2" color="#c27a2a"></a-box>
+  <a-box position="12.1 1.5 0"  width="0.2" height="3" depth="6.2" color="#c27a2a"></a-box>
 
   <a-box position="0 3.05 0" width="24" height="0.1" depth="6.2" color="#f5f3ee"></a-box>
 
   <a-plane position="-12.01 1.6 -1.5" rotation="0 90 0" width="2.2" height="1.2" color="#8fb5d1" material="opacity:0.9; roughness:0.2"></a-plane>
   <a-plane position="-12.01 1.6  0.5" rotation="0 90 0" width="2.2" height="1.2" color="#8fb5d1" material="opacity:0.9; roughness:0.2"></a-plane>
-  <a-plane position="12.01 1.6 -0.5" rotation="0 -90 0" width="2.2" height="1.2" color="#8fb5d1" material="opacity:0.9; roughness:0.2"></a-plane>
+  <a-plane position="12.01 1.6 -0.5"  rotation="0 -90 0" width="2.2" height="1.2" color="#8fb5d1" material="opacity:0.9; roughness:0.2"></a-plane>
 
   <a-plane position="0 2.2 3.08" rotation="0 180 0" width="9" height="1.2" color="#5a3b25"></a-plane>
   <a-text value="SBU Hackathon" position="0 2.2 3.09" rotation="0 180 0" align="center" color="#e9e4df" width="11"></a-text>
@@ -191,42 +205,106 @@
     <a-entity gltf-model="#rover" fit-to-height="meters:0.55" position="0.0 0.98 0.20" rotation="0 0 0" shadow="cast:true"></a-entity>
   </a-entity>
 
-  <a-entity position="-6 0 -1.2"><a-entity table-top="wood:#e5d7c5"></a-entity><a-entity prop-vr></a-entity></a-entity>
-  
-  <a-entity id="robotPropTable" position="-2 0 -1.2"><a-entity table-top="wood:#a25f2a"></a-entity><a-entity prop-rover></a-entity></a-entity>
-  
-  <a-entity id="secondGroupTable" position=" 2 0 -1.2">
+  <a-entity position="-6 0 -1.2">
+    <a-entity table-top="wood:#e5d7c5"></a-entity>
+    <a-entity prop-vr></a-entity>
+  </a-entity>
+
+  <a-entity id="robotPropTable" position="-2 0 -1.2">
+    <a-entity table-top="wood:#a25f2a"></a-entity>
+    <a-entity prop-rover></a-entity>
+  </a-entity>
+
+  <a-entity id="secondGroupTable" position="2 0 -1.2">
     <a-entity table-top="wood:#c27a2a"></a-entity>
     <a-entity prop-laptop></a-entity>
   </a-entity>
   
-  <a-entity position=" 6 0 -1.2"><a-entity table-top="wood:#e9e4df"></a-entity><a-entity prop-laptop></a-entity></a-entity>
-  <a-entity position="-6 0 0.8"><a-entity table-top="wood:#6d6d6d"></a-entity><a-entity prop-laptop></a-entity></a-entity>
-  <a-entity position=" 6 0 0.8"><a-entity table-top="wood:#5a3b25"></a-entity><a-entity prop-vr></a-entity></a-entity>
+  <a-entity position="6 0 -1.2">
+    <a-entity table-top="wood:#e9e4df"></a-entity>
+    <a-entity prop-laptop></a-entity>
+  </a-entity>
 
-  <a-entity gltf-model="#pDavid"  fit-to-height="meters:2.2" position="-0.7 0 -1.0" rotation="0 180 0" shadow="cast:true"></a-entity>
-  <a-entity gltf-model="#pVika"   fit-to-height="meters:2.2" position=" 0.0 0 -1.0" rotation="0 180 0" shadow="cast:true"></a-entity>
-  <a-entity gltf-model="#pKen"    fit-to-height="meters:2.2" position=" 0.7 0 -1.0" rotation="0 180 0" shadow="cast:true"></a-entity>
+  <a-entity position="-6 0 0.8">
+    <a-entity table-top="wood:#6d6d6d"></a-entity>
+    <a-entity prop-laptop></a-entity>
+  </a-entity>
 
-  <a-entity gltf-model="#p3291"   fit-to-height="meters:2.2" position=" 1.2 0 -0.80" rotation="0 0 0"  shadow="cast:true"></a-entity>
-  <a-entity gltf-model="#p5451"   fit-to-height="meters:2.2" position=" 2.0 0 -0.80" rotation="0 0 0"  shadow="cast:true"></a-entity>
-  <a-entity gltf-model="#pAndrew" fit-to-height="meters:2.2" position=" 2.8 0 -0.80" rotation="0 0 0" shadow="cast:true"></a-entity>
+  <a-entity position="6 0 0.8">
+    <a-entity table-top="wood:#5a3b25"></a-entity>
+    <a-entity prop-vr></a-entity>
+  </a-entity>
 
-  <a-entity gltf-model="#pPlaid"  fit-to-height="meters:2.2" position="-3.0 0 -0.80" rotation="0 180 0" shadow="cast:true"></a-entity>
+  <a-entity gltf-model="#pDavid"  fit-to-height="meters:2.2" position="-0.7 0 -1.0" rotation="0 180 0" shadow="cast:true"
+    animation__nod="property: rotation; to: 5 180 0; dir: alternate; dur: 1500; loop: true; easing: linear"></a-entity>
+  <a-entity gltf-model="#pVika"   fit-to-height="meters:2.2" position="0 0 -1.2" rotation="0 180 0" shadow="cast:true"
+    animation__turn="property: rotation; to: 0 190 0; dir: alternate; dur: 3000; loop: true; easing: linear"></a-entity>
+  <a-entity gltf-model="#pKen"    fit-to-height="meters:2.2" position="0.7 0 -1.0" rotation="0 180 0" shadow="cast:true"
+    animation__fidget="property: rotation; to: 2 178 -1; dir: alternate; dur: 4000; loop: true; easing: easeInOutSine"></a-entity>
+  <a-entity gltf-model="#p3291"   fit-to-height="meters:2.2" position="1.2 0 -0.80" rotation="0 0 0" shadow="cast:true"
+    animation__tilt="property: rotation; to: 0 0 8; dir: alternate; dur: 2500; loop: true; easing: linear"></a-entity>
+  <a-entity gltf-model="#p5451"   fit-to-height="meters:2.2" position="2.0 0 -0.80" rotation="0 0 0" shadow="cast:true"></a-entity>
+  <a-entity gltf-model="#pAndrew" fit-to-height="meters:2.2" position="2.8 0 -0.80" rotation="0 0 0" shadow="cast:true"
+    animation__cough="property: rotation; to: 10 0 0; dir: alternate; dur: 500; loop: true; easing: easeInOutQuad"></a-entity>
+
+  <a-entity gltf-model="#pPlaid"  fit-to-height="meters:2.2" 
+    position="-10 0 -2.0" rotation="0 90 0" shadow="cast:true"
+    animation__walk="property: position; to: 10 0 -2.0; dir: alternate; dur: 15000; loop: true; easing: linear"
+    animation__turn="property: rotation; to: 0 -90 0; dir: alternate; dur: 15000; loop: true; easing: linear"></a-entity>
 
   <a-entity id="rig" position="0 1.6 2.8" movement-controls="fly:true;speed:0.12">
     <a-entity camera look-controls wasd-controls qe-elevator></a-entity>
   </a-entity>
 
-  <script>
-    window.addEventListener('keydown',e=>{
-      if(e.code==='KeyR'){
-        const rig=document.querySelector('#rig');
-        const p=rig.getAttribute('position');
-        rig.setAttribute('position',`${p.x} 1.6 ${p.z}`);
-      }
-    });
-  </script>
 </a-scene>
+
+<!-- Scripts AFTER the scene -->
+<script>
+  // Reset-height key
+  window.addEventListener('keydown', e => {
+    if (e.code === 'KeyR') {
+      const rig = document.querySelector('#rig'); if (!rig) return;
+      const p = rig.getAttribute('position');
+      rig.setAttribute('position', `${p.x} 1.6 ${p.z}`);
+    }
+  });
+
+  // Audio sequence: 4s max each, 5s between starts, volume 0.5
+  (function setupAudio(){
+    const scene = document.querySelector('a-scene'); if (!scene) return;
+
+    function startSequence(){
+      const ids = ['aud-arnav','aud-saanavi','aud-crowd','aud-cough','aud-hmmm','aud-adi','aud-interesting'];
+      const clips = ids.map(id => document.getElementById(id)).filter(Boolean);
+      if (!clips.length) return;
+
+      const SECONDS_PER_CLIP = 4;
+      const GAP_BETWEEN_STARTS = 5;
+      const VOLUME = 0.5; // half
+
+      clips.forEach(a => { try { a.volume = VOLUME; } catch(_) {} });
+
+      clips.forEach((a,i)=>{
+        setTimeout(()=>{
+          try { a.pause(); a.currentTime = 0; a.volume = VOLUME; } catch(_) {}
+          const p = a.play(); if (p && p.catch) p.catch(()=>{});
+          setTimeout(()=>{ try { a.pause(); a.currentTime = 0; } catch(_) {} }, SECONDS_PER_CLIP*1000);
+        }, i*GAP_BETWEEN_STARTS*1000);
+      });
+    }
+
+    // wait for scene & require user gesture for autoplay
+    scene.addEventListener('loaded', ()=>{
+      const go = ()=>{ startSequence();
+        window.removeEventListener('click', go);
+        window.removeEventListener('keydown', go);
+        scene.removeEventListener('enter-vr', go);
+      };
+      window.addEventListener('click', go);
+      window.addEventListener('keydown', go);
+      scene.addEventListener('enter-vr', go);
+    }, {once:true});
+  })();
+</script>
 </body>
 </html>
