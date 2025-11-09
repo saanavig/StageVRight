@@ -106,15 +106,11 @@ http://localhost:8000/auditorium.html
 
 ## 👥 Team
 
-- Aditya Dwivedi
+- Aditya D.
 - Saanavi G.  
 - Arnav D.
 - Aprajita S.
 
 ---
-
-## 💬 Tagline
-
 > *Practice like it’s real — before it’s real.* 🎙️
-
 ---
