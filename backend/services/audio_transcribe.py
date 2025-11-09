@@ -1,19 +1,23 @@
 import os
+import json
 from dotenv import load_dotenv
-import google.generativeai as genai
 import whisper
 from .metrics import compute_metrics
 import torchaudio
 import librosa
 from pydub import AudioSegment
 import httpx
-
+from datetime import datetime
+from openai import OpenAI
 
 load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
+
+# --- API Keys ---
+api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
-    raise ValueError("❌ GEMINI_API_KEY not found in .env")
-genai.configure(api_key=api_key)
+    raise ValueError("❌ OPENAI_API_KEY not found in .env")
+
+client = OpenAI(api_key=api_key)
 
 deepgram_key = os.getenv("DEEPGRAM_API_KEY")
 if not deepgram_key:
@@ -21,7 +25,7 @@ if not deepgram_key:
 
 
 def ensure_wav(input_path: str) -> str:
-
+    """Ensure the input audio file is in .wav format"""
     if input_path.lower().endswith(".wav"):
         return input_path
 
@@ -34,7 +38,6 @@ def ensure_wav(input_path: str) -> str:
         raise RuntimeError(f"❌ Failed to convert to WAV: {e}")
 
 
-# --- Deepgram (REST API) test function ---
 async def deepgram_test(audio_path: str):
     """Quick test call to verify Deepgram works (direct REST)."""
     url = "https://api.deepgram.com/v1/listen"
@@ -47,8 +50,8 @@ async def deepgram_test(audio_path: str):
     with open(audio_path, "rb") as f:
         data = f.read()
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(url, params=params, headers=headers, content=data)
+    async with httpx.AsyncClient(timeout=60.0) as client_http:
+        response = await client_http.post(url, params=params, headers=headers, content=data)
         response.raise_for_status()
         result = response.json()
 
@@ -79,7 +82,7 @@ def run_pipeline(audio_path: str):
 
     print("Metrics:\n", metrics)
 
-    # --- Deepgram verification ---
+    # deepgram verification
     print("Testing Deepgram transcription...")
     try:
         import asyncio
@@ -89,8 +92,9 @@ def run_pipeline(audio_path: str):
         print("❌ Deepgram test error:", e)
         dg_transcript, dg_result = "", None
 
+    # --- AI Feedback Generation (OpenAI SDK v2.x)
     try:
-        model = genai.GenerativeModel("gemini-1.5-pro")
+        print("Generating AI feedback summary with OpenAI...")
 
         prompt = f"""
         You are a professional public speaking and communication coach.
@@ -108,30 +112,40 @@ def run_pipeline(audio_path: str):
 
         === INSTRUCTIONS ===
         1. Write exactly two sentences of personalized, encouraging feedback.
-        2. Be specific — reference the speaker’s use of fillers, repetitions, pacing, and clarity.
+        2. Be specific — reference the speaker's use of fillers, repetitions, pacing, and clarity.
         3. Highlight one strength and one actionable improvement.
-        4. Keep a motivational and professional tone (as if coaching a student preparing for a speech competition).
+        4. Keep a motivational and professional tone.
         5. Avoid restating the metrics; interpret them instead.
-
-        Example style:
-        "Your delivery is clear and confident, showing solid preparation. Try reducing filler words like 'um' or 'like' to make your transitions smoother and maintain engagement."
-
-        Now write the final feedback below:
         """
 
-        response = model.generate_content(prompt)
-        feedback = response.text.strip()
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+        )
+
+        feedback = response.choices[0].message.content.strip()
+        print("✅ Feedback successfully generated:")
+        print(feedback)
+
     except Exception as e:
-        print("❌ Gemini feedback error:", e)
-        feedback = "Feedback unavailable."
+        print("❌ OpenAI feedback error:", repr(e))
+        feedback = f"Feedback unavailable. ({e})"
 
 
         return {
-            "filename": os.path.basename(audio_path),
-            "transcript": transcript_text,
-            "metrics": metrics,
-            "deepgram_transcript": dg_transcript,
-            "feedback": feedback,
+             "filename": os.path.basename(audio_path),
+        "transcript": transcript_text,
+        "fillers": metrics.get('fillers', 0),
+        "repetitions": metrics.get('repetitions', 0),
+        "fluency_score": metrics.get('fluency_score', 0),
+        "clarity_score": metrics.get('clarity_score', 0),
+        "wpm": metrics.get('wpm', 0),
+        "overall_score": metrics.get('overall_score', 0),
+        "feedback_summary": feedback,
+        "scene": "Auditorium",
+        "date": datetime.now().isoformat(),
+        "deepgram_transcript": dg_transcript,
         }
 
 
