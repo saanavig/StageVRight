@@ -12,7 +12,8 @@ if CURRENT_DIR not in sys.path:
     sys.path.append(CURRENT_DIR)
 
 app = Flask(__name__)
-CORS(app)
+# Allow all origins and credentials for CORS
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 @app.route("/")
 def home():

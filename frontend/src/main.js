@@ -63,12 +63,8 @@ function renderSession() {
       <div class="card live">
         <div class="live-inner center">
           <div class="live-stage" id="vrPlaceholder">
-            <iframe
-              src="http://localhost:5174/vr.html"
-              title="Speak Space VR scene"
-              class="vr-frame"
-              allow="xr-spatial-tracking; microphone; fullscreen; accelerometer; gyroscope"
-            ></iframe>
+            <!-- Meta Quest feed/cast placeholder (user should embed their cast here) -->
+            <video id="questCast" style="width:100%;height:100%;object-fit:cover;" autoplay playsinline muted></video>
           </div>
           <div class="controls">
             <button id="simulateBtn" class="btn ok">View Latest Results</button>
@@ -113,15 +109,16 @@ function renderSession() {
     btn.textContent = 'Loading latest results...'
 
     try {
-      // 1️⃣ Fetch session list
+      // 1️⃣ Fetch session list (backend/sessions only)
       const listRes = await fetch('http://127.0.0.1:8000/sessions/')
       const listData = await listRes.json()
-      const files = listData.sessions || []
+      // Only use files in backend/sessions (no UUID filter)
+      const files = (listData.sessions || []).filter(f => f.endsWith('.json'))
       if (!files.length) throw new Error('No session JSON files found.')
 
       // 2️⃣ Sort and get latest
-      files.sort()
-      const latest = files[files.length - 1]
+  files.sort().reverse()
+  const latest = files[0]
 
       // 3️⃣ Fetch latest JSON
       const res = await fetch(`http://127.0.0.1:8000/sessions/${latest}`)
@@ -150,6 +147,16 @@ function renderSession() {
       btn.textContent = 'View Latest Results'
     }
   })
+
+  // Meta Quest cast: try to attach a stream if available (user must start cast in browser)
+  // This is a placeholder: user should use Chrome tab capture or similar to cast Quest feed
+  // For demo, try to attach any available video input
+  const questCast = document.getElementById('questCast')
+  if (questCast && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      .then(stream => { questCast.srcObject = stream })
+      .catch(() => {/* ignore if not allowed */})
+  }
 }
 
 /* ---------- Auto-refresh backend history ---------- */
@@ -157,7 +164,8 @@ async function updateHistoryFromBackend() {
   try {
     const res = await fetch('http://127.0.0.1:8000/sessions/')
     const data = await res.json()
-    const files = data.sessions || []
+    // Only use files in backend/sessions (no UUID filter)
+    const files = (data.sessions || []).filter(f => f.endsWith('.json'))
     if (!files.length) return
 
     files.sort().reverse()
@@ -169,7 +177,10 @@ async function updateHistoryFromBackend() {
         const metrics = result.metrics || result
 
         const raw = filename.replace('.json', '')
-        const [dateStr, timeStr] = raw.split('_')
+        // Parse date/time from filename: 20251109_015300.json
+        const parts = raw.split('_')
+        const dateStr = parts[0]
+        const timeStr = parts[1]
         const year = dateStr.slice(0, 4)
         const month = parseInt(dateStr.slice(4, 6), 10)
         const day = parseInt(dateStr.slice(6, 8), 10)

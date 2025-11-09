@@ -215,6 +215,18 @@
     <a-plane position="0 2.2 3.08" rotation="0 180 0" width="9" height="1.2" color="#5a3b25"></a-plane>
     <a-text value="SBU Hackathon" position="0 2.2 3.09" rotation="0 180 0" align="center" color="#e9e4df" width="11"></a-text>
 
+    <a-entity id="center-stage" position="0 0 -1.1">
+      <a-cylinder radius="2.3" height="0.16" material="color:#262626; metalness:0.25; roughness:0.6" position="0 0.08 0"></a-cylinder>
+      <a-cylinder radius="2.05" height="0.07" material="color:#373d45; metalness:0.35; roughness:0.4" position="0 0.13 0"></a-cylinder>
+      <a-ring radius-inner="1.95" radius-outer="2.2" rotation="-90 0 0" material="color:#4ca3ff; opacity:0.35; transparent:true" position="0 0.14 0"></a-ring>
+      <a-entity geometry="primitive: plane; width: 1.9; height: 0.8" position="0 1.25 0.02" material="color:#112335; opacity:0.85; transparent:true">
+        <a-entity geometry="primitive: plane; width: 1.94; height: 0.84" position="0 0 -0.02" material="color:#4ca3ff; opacity:0.18; transparent:true"></a-entity>
+        <a-text value="Demo in Progress" position="0 0.15 0.01" align="center" color="#cfe6ff" width="1.6"></a-text>
+        <a-text value="Live robotics showcase with AI narration" position="0 -0.2 0.01" align="center" color="#f6fbff" width="1.8" wrap-count="28"></a-text>
+      </a-entity>
+      <a-entity geometry="primitive: cone; radiusBottom: 0.32; radiusTop: 0" material="color:#4ca3ff; opacity:0.25; transparent:true" position="0 1.7 0" rotation="-90 0 0"></a-entity>
+    </a-entity>
+
     <!-- Tables and props -->
     <a-entity id="showcaseTable" position="0 0 0">
       <a-entity table-top="wood:#d0a96b"></a-entity>
@@ -253,21 +265,57 @@
     </a-entity>
 
     <!-- People -->
-    <a-entity gltf-model="#pDavid"  fit-to-height="meters:2.2" position="-0.7 0 -1.0" rotation="0 180 0" shadow="cast:true"
-              animation__nod="property: rotation; to: 5 180 0; dir: alternate; dur: 1500; loop: true; easing: linear"></a-entity>
-    <a-entity gltf-model="#pVika"   fit-to-height="meters:2.2" position="0 0 -1.2"   rotation="0 180 0" shadow="cast:true"
-              animation__turn="property: rotation; to: 0 190 0; dir: alternate; dur: 3000; loop: true; easing: linear"></a-entity>
-    <a-entity gltf-model="#pKen"    fit-to-height="meters:2.2" position="0.7 0 -1.0" rotation="0 180 0" shadow="cast:true"
-              animation__fidget="property: rotation; to: 2 178 -1; dir: alternate; dur: 4000; loop: true; easing: easeInOutSine"></a-entity>
-    <a-entity gltf-model="#p3291"   fit-to-height="meters:2.2" position="1.2 0 -0.80" rotation="0 0 0"   shadow="cast:true"
-              animation__tilt="property: rotation; to: 0 0 8; dir: alternate; dur: 2500; loop: true; easing: linear"></a-entity>
-    <a-entity gltf-model="#p5451"   fit-to-height="meters:2.2" position="2.0 0 -0.80" rotation="0 0 0"   shadow="cast:true"></a-entity>
-    <a-entity gltf-model="#pAndrew" fit-to-height="meters:2.2" position="2.8 0 -0.80" rotation="0 0 0"   shadow="cast:true"
-              animation__cough="property: rotation; to: 10 0 0; dir: alternate; dur: 500; loop: true; easing: easeInOutQuad"></a-entity>
+    <a-entity gltf-model="#pDavid" data-audio-anchor="aud-arnav"
+              sound="src: #aud-arnav; autoplay: false; positional: true; distanceModel: linear; refDistance: 1.4; maxDistance: 16; rolloffFactor: 1; volume: 0.3"
+              fit-to-height="meters:2.2" position="-1.05 0 -1.25" rotation="0 182 0" shadow="cast:true"
+              animation__nod="property: rotation; to: 4 182 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"></a-entity>
+    <a-entity gltf-model="#pVika" data-audio-anchor="aud-saanavi"
+              sound="src: #aud-saanavi; autoplay: false; positional: true; distanceModel: linear; refDistance: 1.4; maxDistance: 16; rolloffFactor: 1; volume: 0.3"
+              fit-to-height="meters:2.2" position="-0.35 0 -1.35" rotation="0 183 0" shadow="cast:true"
+              animation__turn="property: rotation; to: 0 191 0; dir: alternate; dur: 3200; loop: true; easing: easeInOutQuad"></a-entity>
+    <a-entity gltf-model="#pKen" data-audio-anchor="aud-hmmm"
+              sound="src: #aud-hmmm; autoplay: false; positional: true; distanceModel: linear; refDistance: 1.5; maxDistance: 16; rolloffFactor: 1; volume: 0.3"
+              fit-to-height="meters:2.2" position="0.55 0 -1.3" rotation="0 178 0" shadow="cast:true"
+              animation__fidget="property: rotation; to: 2 176 -1; dir: alternate; dur: 3800; loop: true; easing: easeInOutSine"></a-entity>
+    <a-entity gltf-model="#p3291" fit-to-height="meters:2.2" position="1.35 0 -1.15" rotation="0 170 0" shadow="cast:true"
+              animation__tilt="property: rotation; to: 0 170 7; dir: alternate; dur: 2600; loop: true; easing: easeInOutQuad"></a-entity>
+    <a-entity gltf-model="#p5451" data-audio-anchor="aud-adi"
+              sound="src: #aud-adi; autoplay: false; positional: true; distanceModel: linear; refDistance: 1.4; maxDistance: 16; rolloffFactor: 1; volume: 0.3"
+              fit-to-height="meters:2.2" position="2.05 0 -1.05" rotation="0 160 0" shadow="cast:true"
+              animation__lean="property: rotation; to: -3 162 0; dir: alternate; dur: 3400; loop: true; easing: easeInOutSine"></a-entity>
+    <a-entity gltf-model="#pAndrew" data-audio-anchor="aud-cough"
+              sound="src: #aud-cough; autoplay: false; positional: true; distanceModel: linear; refDistance: 1.3; maxDistance: 16; rolloffFactor: 1; volume: 0.3"
+              fit-to-height="meters:2.2" position="0.1 0 -0.85" rotation="0 192 0" shadow="cast:true"
+              animation__cough="property: rotation; to: 10 192 0; dir: alternate; dur: 550; loop: true; easing: easeInOutQuad"></a-entity>
 
-    <a-entity gltf-model="#pPlaid"  fit-to-height="meters:2.2" position="-10 0 -2.0" rotation="0 90 0" shadow="cast:true"
-              animation__walk="property: position; to: 10 0 -2.0; dir: alternate; dur: 15000; loop: true; easing: linear"
-              animation__turn="property: rotation; to: 0 -90 0; dir: alternate; dur: 15000; loop: true; easing: linear"></a-entity>
+    <a-entity gltf-model="#pPlaid" data-audio-anchor="aud-interesting"
+              sound="src: #aud-interesting; autoplay: false; positional: true; distanceModel: linear; refDistance: 1.6; maxDistance: 18; rolloffFactor: 1; volume: 0.3"
+              fit-to-height="meters:2.2" position="-2.4 0 0.85" rotation="0 212 0" shadow="cast:true"
+              animation__shift="property: position; dir: alternate; to: -2.2 0 0.95; dur: 2600; loop: true; easing: easeInOutSine"></a-entity>
+    <a-entity gltf-model="#p3291" fit-to-height="meters:2.2" position="2.6 0 0.75" rotation="0 150 0" shadow="cast:true"
+              animation__nod="property: rotation; to: 3 150 0; dir: alternate; dur: 2800; loop: true; easing: easeInOutQuad"></a-entity>
+
+    <!-- Stylised audience silhouettes -->
+    <a-entity position="-3.1 0 -0.4">
+      <a-cylinder height="1.05" radius="0.22" material="color:#3f3f3f; roughness:0.7" position="0 0.53 0"></a-cylinder>
+      <a-sphere radius="0.22" color="#59606b" position="0 1.18 0"></a-sphere>
+    </a-entity>
+    <a-entity position="-3.6 0 -1.1">
+      <a-cylinder height="1.15" radius="0.24" material="color:#454545; roughness:0.65" position="0 0.58 0"></a-cylinder>
+      <a-sphere radius="0.24" color="#646b76" position="0 1.25 0"></a-sphere>
+    </a-entity>
+    <a-entity position="3.2 0 -0.5">
+      <a-cylinder height="1.05" radius="0.2" material="color:#3d4048; roughness:0.72" position="0 0.53 0"></a-cylinder>
+      <a-sphere radius="0.2" color="#5b6370" position="0 1.14 0"></a-sphere>
+    </a-entity>
+    <a-entity position="3.6 0 -1.2">
+      <a-cylinder height="1.2" radius="0.24" material="color:#41454d; roughness:0.68" position="0 0.6 0"></a-cylinder>
+      <a-sphere radius="0.24" color="#6a7380" position="0 1.28 0"></a-sphere>
+    </a-entity>
+
+    <a-entity id="ambient-chatter-anchor" data-audio-anchor="aud-muffled-chatter-23025"
+              sound="src: #aud-muffled-chatter-23025; autoplay: false; positional: true; distanceModel: linear; refDistance: 2; maxDistance: 20; rolloffFactor: 1; volume: 0.25"
+              position="0 1.2 -1.1"></a-entity>
 
     <!-- Rig -->
     <a-entity id="rig" position="0 1.6 2.8" movement-controls="fly:true;speed:0.12">
@@ -318,10 +366,43 @@
         const GAP_BETWEEN_STARTS = 5; // ensures >=5s separation
         const VOLUME = 0.3;
 
+        const anchorMap = {};
+        ids.forEach(id => {
+          const anchor = document.querySelector(`[data-audio-anchor="${id}"]`);
+          if (anchor) {
+            anchorMap[id] = anchor;
+          }
+        });
+
+        const playFromAnchor = (anchor) => {
+          if (!anchor) return false;
+          const soundComp = anchor.components && anchor.components.sound;
+          if (!soundComp) return false;
+          soundComp.stopSound();
+          soundComp.playSound();
+          setTimeout(() => {
+            const current = anchor.components && anchor.components.sound;
+            if (current) current.stopSound();
+          }, SECONDS_PER_CLIP * 1000);
+          return true;
+        };
+
         clips.forEach(a => { try { a.volume = VOLUME; } catch(_) {} });
 
         clips.forEach((a,i)=>{
           setTimeout(()=>{
+            const anchor = anchorMap[a.id];
+            if (anchor) {
+              if (!playFromAnchor(anchor)) {
+                anchor.addEventListener('componentinitialized', (evt) => {
+                  if (evt && evt.detail && evt.detail.name === 'sound') {
+                    playFromAnchor(anchor);
+                  }
+                }, { once: true });
+              }
+              return;
+            }
+
             try {
               a.pause(); a.currentTime = 0; a.volume = VOLUME;
               const p = a.play();

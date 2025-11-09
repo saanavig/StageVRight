@@ -26,6 +26,15 @@ let vrRecordPlane = null;
 let vrRecordText = null;
 let vrAnalyzePlane = null;
 let vrAnalyzeText = null;
+let teleprompterDom = null;
+let teleprompterStyleApplied = false;
+let teleprompterTimeout = null;
+let teleprompterVr = null;
+let teleprompterVrText = null;
+let teleprompterVrClose = null;
+const TELEPROMPT_DURATION_MS = 25000;
+const SAMPLE_SPEECH = `Welcome everyone, and thank you for stepping into SpeakSpaceVR today. I'm excited to show you how immersive rehearsal can sharpen your confidence and timing. As you look around, notice the responsive audience, spatial sound cues, and the live analytics HUD tracking your presence. In a moment, you'll see how we capture audio, send it for AI feedback, and return actionable insights without ever leaving VR. Imagine building your next talk in spaces like these—tailored to your venue, interactive for your team, and always ready for the headset in your bag. Let's breathe in, center ourselves, and dive into the demo together.`;
+let teleprompterDismissed = false;
 
 const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:8001/ws`;
 const ws = new VRWebSocket(WS_URL);
@@ -68,6 +77,12 @@ function setRecordingState(active) {
     vrRecordPlane.setAttribute('material', active
       ? 'color: #c62828; opacity: 0.9; transparent: true'
       : 'color: #17406f; opacity: 0.85; transparent: true');
+  }
+  if (active) {
+    teleprompterDismissed = false;
+    showTeleprompter();
+  } else {
+    hideTeleprompter();
   }
 }
 
@@ -374,12 +389,16 @@ function ensureVrHud(camera, scene) {
     scene.addEventListener('enter-vr', () => {
       isVrMode = true;
       if (vrHud) vrHud.setAttribute('visible', hudVisible);
+      if (teleprompterVr && isRecording) {
+        teleprompterVr.setAttribute('visible', true);
+      }
       updateVrHudText();
       bindControllerInputs(scene);
     });
     scene.addEventListener('exit-vr', () => {
       isVrMode = false;
       if (vrHud) vrHud.setAttribute('visible', false);
+      if (teleprompterVr) teleprompterVr.setAttribute('visible', false);
     });
     sceneVrEventsBound = true;
     isVrMode = scene.is('vr-mode');
@@ -390,7 +409,174 @@ function ensureVrHud(camera, scene) {
     updateVrHudText();
   }
 
+  ensureTeleprompterVr(camera);
+
   bindControllerInputs(scene);
+}
+
+function ensureTeleprompterVr(camera) {
+  if (!camera || teleprompterVr) return;
+  teleprompterVr = document.createElement('a-entity');
+  teleprompterVr.id = 'teleprompter-vr';
+  teleprompterVr.setAttribute('position', '0 0.2 -1.16');
+  teleprompterVr.setAttribute('rotation', '0 -6 0');
+  teleprompterVr.setAttribute('scale', '0.42 0.42 0.42');
+  teleprompterVr.setAttribute('visible', false);
+
+  const accent = document.createElement('a-plane');
+  accent.setAttribute('width', '1.92');
+  accent.setAttribute('height', '1.18');
+  accent.setAttribute('position', '0 0 -0.03');
+  accent.setAttribute('material', 'color: #64bbff; opacity: 0.25; transparent: true; side: double');
+
+  const base = document.createElement('a-plane');
+  base.setAttribute('width', '1.86');
+  base.setAttribute('height', '1.12');
+  base.setAttribute('material', 'color: #031a2e; opacity: 0.92; transparent: true; roughness: 0.25; metalness: 0.05; side: double');
+
+  const headerBar = document.createElement('a-plane');
+  headerBar.setAttribute('width', '1.86');
+  headerBar.setAttribute('height', '0.22');
+  headerBar.setAttribute('position', '0 0.5 0.02');
+  headerBar.setAttribute('material', 'color: #0f3c63; opacity: 0.96; transparent: true');
+
+  const headerText = document.createElement('a-text');
+  headerText.setAttribute('value', 'Warm-Up Script');
+  headerText.setAttribute('align', 'center');
+  headerText.setAttribute('color', '#e3f3ff');
+  headerText.setAttribute('width', '1.6');
+  headerText.setAttribute('position', '0 0.5 0.04');
+
+  teleprompterVrText = document.createElement('a-text');
+  teleprompterVrText.id = 'teleprompter-vr-text';
+  teleprompterVrText.setAttribute('position', '-0.72 0.09 0.04');
+  teleprompterVrText.setAttribute('align', 'left');
+  teleprompterVrText.setAttribute('color', '#f1f8ff');
+  teleprompterVrText.setAttribute('width', '1.34');
+  teleprompterVrText.setAttribute('wrap-count', '32');
+  teleprompterVrText.setAttribute('lineHeight', '24');
+
+  const vrMaskTop = document.createElement('a-plane');
+  vrMaskTop.setAttribute('width', '1.86');
+  vrMaskTop.setAttribute('height', '0.18');
+  vrMaskTop.setAttribute('position', '0 0.3 0.045');
+  vrMaskTop.setAttribute('material', 'color: #031a2e; opacity: 0.92; transparent: true');
+
+  const vrMaskBottom = document.createElement('a-plane');
+  vrMaskBottom.setAttribute('width', '1.86');
+  vrMaskBottom.setAttribute('height', '0.16');
+  vrMaskBottom.setAttribute('position', '0 -0.38 0.045');
+  vrMaskBottom.setAttribute('material', 'color: #031a2e; opacity: 0.92; transparent: true');
+
+  teleprompterVrClose = document.createElement('a-plane');
+  teleprompterVrClose.id = 'teleprompter-vr-close';
+  teleprompterVrClose.setAttribute('width', '0.2');
+  teleprompterVrClose.setAttribute('height', '0.2');
+  teleprompterVrClose.setAttribute('position', '0.88 0.5 0.045');
+  teleprompterVrClose.setAttribute('material', 'color: #ff6b6b; opacity: 0.88; transparent: true');
+  teleprompterVrClose.setAttribute('class', 'pickable');
+
+  const teleprompterVrCloseText = document.createElement('a-text');
+  teleprompterVrCloseText.setAttribute('value', 'X');
+  teleprompterVrCloseText.setAttribute('align', 'center');
+  teleprompterVrCloseText.setAttribute('color', '#ffffff');
+  teleprompterVrCloseText.setAttribute('width', '0.5');
+  teleprompterVrCloseText.setAttribute('position', '0 0 0.02');
+  teleprompterVrCloseText.setAttribute('baseline', 'center');
+  teleprompterVrClose.appendChild(teleprompterVrCloseText);
+
+  teleprompterVr.appendChild(accent);
+  teleprompterVr.appendChild(base);
+  teleprompterVr.appendChild(headerBar);
+  teleprompterVr.appendChild(headerText);
+  teleprompterVr.appendChild(teleprompterVrText);
+  teleprompterVr.appendChild(vrMaskTop);
+  teleprompterVr.appendChild(vrMaskBottom);
+  teleprompterVr.appendChild(teleprompterVrClose);
+  camera.appendChild(teleprompterVr);
+
+  teleprompterVrClose.addEventListener('click', () => {
+    teleprompterDismissed = true;
+    hideTeleprompter();
+  });
+  teleprompterVrClose.addEventListener('mouseenter', () => {
+    teleprompterVrClose.setAttribute('material', 'color: #ff8585; opacity: 0.95; transparent: true');
+  });
+  teleprompterVrClose.addEventListener('mouseleave', () => {
+    teleprompterVrClose.setAttribute('material', 'color: #ff6b6b; opacity: 0.85; transparent: true');
+  });
+}
+
+function ensureTeleprompterDom() {
+  if (!teleprompterStyleApplied) {
+    const style = document.createElement('style');
+    style.id = 'teleprompter-style';
+  style.textContent = `#teleprompter-overlay{position:fixed;top:12%;left:50%;transform:translateX(-50%);width:min(480px,80vw);padding:20px 26px 24px;border-radius:18px;background:rgba(4,19,33,.82);border:1px solid rgba(132,208,255,.4);box-shadow:0 24px 48px rgba(0,0,0,.45);color:#ecf6ff;font-family:inherit;line-height:1.55;z-index:12;backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .25s ease;}#teleprompter-overlay.active{opacity:1;pointer-events:auto;}#teleprompter-overlay h2{margin:0 0 12px;font-size:16px;text-transform:uppercase;letter-spacing:.08em;color:#9ed9ff;}#teleprompter-overlay .teleprompter-close{position:absolute;top:10px;right:12px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,107,107,.9);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 0 12px rgba(255,107,107,.3);}#teleprompter-overlay .teleprompter-scroll{max-height:300px;overflow:hidden;position:relative;}#teleprompter-overlay .teleprompter-text{display:block;font-size:15px;white-space:pre-wrap;transform:translateY(0);animation:teleprompter-scroll 25s linear forwards;padding-right:4px;}#teleprompter-overlay .teleprompter-close:focus{outline:2px solid rgba(255,255,255,.6);}@keyframes teleprompter-scroll{from{transform:translateY(0);}to{transform:translateY(-45%);}}`;
+    document.head.appendChild(style);
+    teleprompterStyleApplied = true;
+  }
+
+  if (!teleprompterDom) {
+    teleprompterDom = document.createElement('div');
+    teleprompterDom.id = 'teleprompter-overlay';
+    teleprompterDom.innerHTML = `<button class="teleprompter-close" aria-label="Dismiss teleprompter">×</button><h2>Warm-Up Script</h2><div class="teleprompter-scroll"><span class="teleprompter-text"></span></div>`;
+    document.body.appendChild(teleprompterDom);
+    const closeBtn = teleprompterDom.querySelector('.teleprompter-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        teleprompterDismissed = true;
+        hideTeleprompter();
+      });
+    }
+  }
+
+  const span = teleprompterDom.querySelector('.teleprompter-text');
+  if (span) {
+    span.textContent = SAMPLE_SPEECH;
+  }
+}
+
+function showTeleprompter() {
+  if (teleprompterDismissed) return;
+  ensureTeleprompterDom();
+  if (teleprompterDom) {
+    const span = teleprompterDom.querySelector('.teleprompter-text');
+    if (span) {
+      span.style.animation = 'none';
+      // Force reflow so animation restarts
+      // eslint-disable-next-line no-unused-expressions
+      span.offsetHeight;
+      span.style.animation = 'teleprompter-scroll 25s linear forwards';
+    }
+    teleprompterDom.classList.add('active');
+  }
+
+  if (teleprompterVr && teleprompterVrText) {
+    teleprompterVrText.setAttribute('value', SAMPLE_SPEECH);
+    teleprompterVrText.setAttribute('position', '-0.72 0.09 0.04');
+    teleprompterVrText.removeAttribute('animation__scroll');
+    teleprompterVrText.setAttribute('animation__scroll', `property: position; from: -0.72 0.09 0.04; to: -0.72 0.27 0.04; dur: ${TELEPROMPT_DURATION_MS}; easing: linear`);
+    teleprompterVr.setAttribute('visible', isVrMode);
+  }
+
+  clearTimeout(teleprompterTimeout);
+  teleprompterTimeout = setTimeout(() => {
+    hideTeleprompter();
+  }, TELEPROMPT_DURATION_MS);
+}
+
+function hideTeleprompter() {
+  clearTimeout(teleprompterTimeout);
+  teleprompterTimeout = null;
+  if (teleprompterDom) {
+    teleprompterDom.classList.remove('active');
+  }
+  if (teleprompterVr) {
+    teleprompterVr.setAttribute('visible', false);
+    if (teleprompterVrText) {
+      teleprompterVrText.removeAttribute('animation__scroll');
+    }
+  }
 }
 
 function bindControllerInputs(scene) {
