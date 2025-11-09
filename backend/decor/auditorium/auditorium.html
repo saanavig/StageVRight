@@ -1,18 +1,18 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <title>StageFreight – Audience Facing Stage</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <style>
-        html,body { margin:0; height:100%; background:#000; overflow:hidden; }
-        .hint { position:fixed; left:12px; bottom:12px; color:#bbb; font:12px/1.4 system-ui; opacity:.8 }
-    </style>
-    </head>
+  <meta charset="utf-8" />
+  <title>StageFreight – Audience Facing Stage</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <style>
+    html,body { margin:0; height:100%; background:#000; overflow:hidden; }
+    .hint { position:fixed; left:12px; bottom:12px; color:#bbb; font:12px/1.4 system-ui; opacity:.8 }
+  </style>
+</head>
 
-    <body>
-    <a-scene
+<body>
+  <a-scene
     renderer="antialias: true"
     vr-mode-ui="enabled: true"
     webxr="optionalFeatures: local-floor, bounded-floor, hand-tracking"
@@ -20,9 +20,9 @@
 
     <!-- ASSETS -->
     <a-assets timeout="30000">
-        <a-asset-item id="auditoriumModel" src="auditorium.glb"></a-asset-item>
-        <a-asset-item id="caleb" src="caleb.glb"></a-asset-item>
-        <a-asset-item id="vika" src="vika_cad.glb"></a-asset-item>
+      <a-asset-item id="auditoriumModel" src="./auditorium.glb"></a-asset-item>
+      <a-asset-item id="caleb"          src="./caleb.glb"></a-asset-item>
+      <a-asset-item id="vika"           src="./vika_cad.glb"></a-asset-item>
     </a-assets>
 
     <!-- LIGHTING -->
@@ -32,7 +32,7 @@
 
     <!-- CAMERA -->
     <a-entity id="player" position="0 1.6 -4" elevate-controls="speed:3">
-        <a-entity camera look-controls wasd-controls="acceleration:15"></a-entity>
+      <a-entity camera look-controls wasd-controls="acceleration:15"></a-entity>
     </a-entity>
 
     <!-- FLOOR -->
@@ -43,48 +43,79 @@
 
     <!-- AUDIENCE -->
     <a-entity id="audience-group"></a-entity>
-    </a-scene>
+  </a-scene>
 
-    <div class="hint">Click canvas to focus • WASD move • Q down / E up</div>
+  <div class="hint">Click canvas to focus • WASD move • Q down / E up</div>
 
-    <script>
-    /* --- Elevator controls --- */
-    AFRAME.registerComponent('elevate-controls', {
+  <script>
+  /* --- Q/E vertical controls --- */
+  AFRAME.registerComponent('elevate-controls', {
     schema: { speed: { default: 3 } },
     init() {
-        this.up = this.down = false;
-        window.addEventListener('keydown', e => {
+      this.up = this.down = false;
+      window.addEventListener('keydown', e => {
         if (e.key.toLowerCase() === 'e') this.up = true;
         if (e.key.toLowerCase() === 'q') this.down = true;
-        });
-        window.addEventListener('keyup', e => {
+      });
+      window.addEventListener('keyup', e => {
         if (e.key.toLowerCase() === 'e') this.up = false;
         if (e.key.toLowerCase() === 'q') this.down = false;
-        });
+      });
     },
     tick(time, dt) {
-        const dy = (this.up ? 1 : 0) - (this.down ? 1 : 0);
-        if (!dy) return;
-        this.el.object3D.position.y += dy * (this.data.speed * dt / 1000);
+      const dy = (this.up ? 1 : 0) - (this.down ? 1 : 0);
+      if (!dy) return;
+      this.el.object3D.position.y += dy * (this.data.speed * dt / 1000);
     }
-    });
+  });
 
-    /* --- Load auditorium + spawn audience --- */
-    const auditorium = document.querySelector('#auditorium');
-    auditorium.addEventListener('model-loaded', () => {
+  /* --- Idle sway without animation component --- */
+  AFRAME.registerComponent('idle-sway', {
+    schema: {
+      ampYaw:  { default: 4 },    // degrees
+      ampRoll: { default: 1.2 },  // degrees
+      ampBob:  { default: 0.03 }, // meters
+      speed:   { default: 1.0 }   // global speed factor
+    },
+    init() {
+      // Cache base transforms once the entity’s initial pos/rot are set
+      const p = this.el.getAttribute('position');
+      const r = this.el.getAttribute('rotation');
+      this.basePos = { x: p.x, y: p.y, z: p.z };
+      this.baseRot = { x: r.x, y: r.y, z: r.z };
+      // Randomize phase so everyone is desynced
+      this.phase = Math.random() * Math.PI * 2;
+    },
+    tick(time, dt) {
+      const t = (time / 1000) * this.data.speed + this.phase;
+      const yaw  = Math.sin(t * 0.6) * this.data.ampYaw;
+      const roll = Math.sin(t * 0.9 + 0.5) * this.data.ampRoll;
+      const bob  = Math.sin(t * 0.7 + 1.0) * this.data.ampBob;
+
+      this.el.setAttribute('rotation',
+        `${this.baseRot.x} ${this.baseRot.y + yaw} ${this.baseRot.z + roll}`);
+      this.el.setAttribute('position',
+        `${this.basePos.x} ${this.basePos.y + bob} ${this.basePos.z}`);
+    }
+  });
+
+  /* --- Load auditorium + spawn audience --- */
+  const auditorium = document.querySelector('#auditorium');
+  auditorium.addEventListener('model-loaded', () => {
     const obj = auditorium.getObject3D('mesh');
     if (!obj) return;
 
-    // Remove any dark planes/screens that may appear behind the seats
+    // Clean up unwanted dark planes
     obj.traverse(node => {
-        if (node.isMesh && node.material && node.material.color) {
+      if (node.isMesh && node.material && node.material.color) {
         const name = node.name.toLowerCase();
         const color = node.material.color;
         if (
-            (color.r < 0.05 && color.g < 0.05 && color.b < 0.05) ||
-            name.includes('plane') || name.includes('shadow') || name.includes('screen') || name.includes('panel')
+          (color.r < 0.05 && color.g < 0.05 && color.b < 0.05) ||
+          name.includes('plane') || name.includes('shadow') ||
+          name.includes('screen') || name.includes('panel')
         ) node.visible = false;
-        }
+      }
     });
 
     const box = new THREE.Box3().setFromObject(obj);
@@ -96,63 +127,117 @@
     auditorium.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
     spawnAudience();
-    });
+  });
 
-    /* --- Grid: 10 rows × 13 columns (denser audience) --- */
-    const seatPositions = [];
-    for (let r = 0; r < 10; r++) {
+  /* --- Grid: 10 rows × 13 columns --- */
+  const seatPositions = [];
+  for (let r = 0; r < 10; r++) {
     for (let c = 0; c < 13; c++) {
-        const x = (c - 6) * 0.5;      // tighter left-right spacing
-        const z = 0.3 - r * 1.05;     // slightly closer front-to-back
-        const y = 0.15 + r * 0.1;     // small upward slope by row
-        seatPositions.push([x, y, z]);
+      const x = (c - 6) * 0.5;
+      const z = 0.3 - r * 1.05;
+      const y = 0.15 + r * 0.1;
+      seatPositions.push([x, y, z]);
     }
-    }
+  }
 
-    /* --- Spawn alternating Caleb & Vika, facing stage (user) --- */
-    function spawnAudience() {
+  /* --- Spawn alternating Caleb & Vika; ~65% get idle-sway --- */
+  function spawnAudience() {
     const group = document.querySelector('#audience-group');
     const models = ['#caleb', '#vika'];
 
     seatPositions.forEach((pos, i) => {
-        const entity = document.createElement('a-entity');
-        const model = models[i % models.length];
-        entity.setAttribute('gltf-model', model);
+      const entity = document.createElement('a-entity');
+      entity.setAttribute('gltf-model', models[i % models.length]);
 
-        const [x, y, z] = pos;
-        const randScale = 0.93 + Math.random() * 0.07;
-        entity.setAttribute('position', `${x} ${y} ${z}`);
-        entity.setAttribute('scale', `${randScale} ${randScale} ${randScale}`);
-        entity.setAttribute('rotation', `0 0 0`);
+      const [x, y, z] = pos;
+      const randScale = 0.93 + Math.random() * 0.07;
+      entity.setAttribute('position', `${x} ${y} ${z}`);
+      entity.setAttribute('scale', `${randScale} ${randScale} ${randScale}`);
+      entity.setAttribute('rotation', `0 0 0`);
 
-        entity.addEventListener('model-loaded', e => {
+      entity.addEventListener('model-loaded', e => {
         const mesh = e.detail.model;
         mesh.traverse(n => {
-            if (n.isMesh && n.material && n.material.color) {
+          if (n.isMesh && n.material && n.material.color) {
             const col = n.material.color;
             const name = n.name.toLowerCase();
             if (
-                (col.r < 0.05 && col.g < 0.05 && col.b < 0.05) ||
-                name.includes('back') || name.includes('shadow') || name.includes('plane')
+              (col.r < 0.05 && col.g < 0.05 && col.b < 0.05) ||
+              name.includes('back') || name.includes('shadow') || name.includes('plane')
             ) n.visible = false;
-            }
+          }
         });
-        });
+      });
 
-        entity.setAttribute('animation', {
-        property: 'rotation',
-        dir: 'alternate',
-        dur: 4500 + Math.random() * 1500,
-        easing: 'easeInOutSine',
-        loop: true,
-        to: `0 ${(Math.random() * 3 - 1.5)} 0`
-        });
+      // Attach sway to a random subset
+      if (Math.random() < 0.65) {
+        const ampYaw  = 2 + Math.random() * 4;    // 2–6°
+        const ampRoll = 0.5 + Math.random() * 1.5; // 0.5–2°
+        const ampBob  = 0.02 + Math.random() * 0.03; // 2–5 cm
+        const speed   = 0.9 + Math.random() * 0.4;   // 0.9–1.3x
+        // Ensure we attach after base transforms are set
+        entity.setAttribute('idle-sway',
+          `ampYaw:${ampYaw}; ampRoll:${ampRoll}; ampBob:${ampBob}; speed:${speed}`);
+      }
 
-        group.appendChild(entity);
+      group.appendChild(entity);
     });
 
-    console.log(`✅ Audience now facing toward you (denser rows, no black screen).`);
-}
-</script>
+    console.log('✅ Audience spawned (idle motions on subset).');
+    initRandomDistractionSounds();  // start audio loop
+  }
+
+  /* --- Truly random distraction sounds: no repeats, ≥5s gap --- */
+  function initRandomDistractionSounds() {
+    const sources = [
+      './cough-cough-103526.mp3',
+      './heh-interesting-82042.mp3',
+      './new-notification-09-352705.mp3',
+      './sneeze-429801.mp3'
+    ];
+    const clips = sources.map(src => {
+      const a = new Audio(src);
+      a.volume = 0.55;
+      a.preload = 'auto';
+      return a;
+    });
+
+    const MIN_GAP = 5000;
+    const MAX_GAP = 15000;
+    let lastIndex = -1;
+    let armed = false;
+
+    function pickIndexDifferentFrom(prev, n) {
+      if (n <= 1) return 0;
+      let idx = Math.floor(Math.random() * n);
+      if (idx === prev) idx = (idx + 1 + Math.floor(Math.random() * (n - 1))) % n;
+      return idx;
+    }
+
+    function scheduleNext() {
+      const delay = MIN_GAP + Math.floor(Math.random() * (MAX_GAP - MIN_GAP));
+      setTimeout(() => {
+        const idx = pickIndexDifferentFrom(lastIndex, clips.length);
+        lastIndex = idx;
+        const a = clips[idx];
+        try { a.currentTime = 0; a.play().catch(()=>{}); } catch {}
+        scheduleNext();
+      }, delay);
+    }
+
+    // Autoplay policies: wait for user gesture once
+    function arm() {
+      if (armed) return;
+      armed = true;
+      clips.forEach(a => { a.play().then(()=>a.pause()).catch(()=>{}); });
+      scheduleNext();
+      window.removeEventListener('click', arm);
+      window.removeEventListener('keydown', arm);
+    }
+    window.addEventListener('click', arm);
+    window.addEventListener('keydown', arm);
+  }
+  </script>
 </body>
 </html>
+
