@@ -1,6 +1,8 @@
 // src/ws.js
 // WebSocket handler for VR frontend
 
+const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:8001/ws`;
+
 class VRWebSocket {
   constructor(url) {
     this.url = url;

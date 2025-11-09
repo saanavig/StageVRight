@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- WebSocket connection setup ---
 // Use current page protocol/host to build WS URL (works on localhost, LAN, or HTTPS)
-const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:8000/ws`;
+const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:8001/ws`;
 const ws = new VRWebSocket(WS_URL);
 
 let currentSessionId = null;

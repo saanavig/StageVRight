@@ -4,3 +4,6 @@ backend/decor/Symposium/3291.glb
 .AppleDouble
 .LSOverride
 venv/
+
+# ignore local certs directory
+/frontend-vr/src/certs/

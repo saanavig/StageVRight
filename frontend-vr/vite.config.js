@@ -1,11 +1,19 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vite'
+import fs from 'fs'
 
 export default defineConfig({
   server: {
-    host: true, // Listen on all addresses, including LAN and tunnels
-    allowedHosts: [
-      'all',
-      'nondeterminable-affectionately-deena.ngrok-free.dev',
-    ], // Explicitly allow ngrok host
+    host: true,
+    https: {
+      cert: fs.readFileSync('./src/certs/192.168.4.39+2.pem'),
+      key: fs.readFileSync('./src/certs/192.168.4.39+2-key.pem')
+    }
   },
-});
+  preview: {
+    host: true,
+    https: {
+      cert: fs.readFileSync('./src/certs/192.168.4.39+2.pem'),
+      key: fs.readFileSync('./src/certs/192.168.4.39+2-key.pem')
+    }
+  }
+})
