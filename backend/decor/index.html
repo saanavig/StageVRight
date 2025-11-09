@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>VR StageReady – Classroom</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <style>
+      html, body { margin:0; height:100%; background:#000; overflow:hidden; }
+      /* optional cursor hint */
+      .hint { position:fixed; left:12px; bottom:12px; color:#bbb; font:12px/1.4 system-ui; opacity:.8 }
+    </style>
+  </head>
+
+  <body>
+    <a-scene
+      renderer="antialias: true"
+      vr-mode-ui="enabled: true"
+      webxr="optionalFeatures: local-floor, bounded-floor, hand-tracking"
+      background="color: #101014">
+
+      <!-- Assets -->
+      <a-assets timeout="30000">
+        <a-asset-item id="room" src="classroom.glb"></a-asset-item>
+      </a-assets>
+
+      <!-- Lights -->
+      <a-entity light="type: ambient; intensity: 1.0"></a-entity>
+      <a-entity light="type: directional; intensity: 1.2" position="3 6 2"></a-entity>
+      <a-entity light="type: point; intensity: 0.8; distance: 20" position="0 5 5"></a-entity>
+
+      <!-- Player rig -->
+      <a-entity id="player" position="0 1.6 8" elevate-controls="speed:3">
+        <a-entity
+          camera
+          look-controls="pointerLockEnabled: true"
+          wasd-controls="acceleration: 15">
+        </a-entity>
+      </a-entity>
+
+      <!-- Ground + test cube -->
+      <a-plane rotation="-90 0 0" width="120" height="120" color="#1b1b1b"></a-plane>
+      <a-box position="0 0.5 -2" width="0.5" height="0.5" depth="0.5" color="#67e8f9"></a-box>
+
+      <!-- Classroom -->
+      <a-entity id="classroom" gltf-model="#room"></a-entity>
+    </a-scene>
+
+    <div class="hint">Click canvas to focus • WASD move • Q down / E up • drag mouse to look</div>
+
+    <script>
+      // Q/E vertical flight no plugins needed
+      AFRAME.registerComponent('elevate-controls', {
+        schema: { speed: { default: 3 } }, // meters/sec
+        init() {
+          this.up = false; this.down = false;
+          this._onKeyDown = (e) => {
+            if (e.key === 'e' || e.key === 'E') this.up = true;
+            if (e.key === 'q' || e.key === 'Q') this.down = true;
+          };
+          this._onKeyUp = (e) => {
+            if (e.key === 'e' || e.key === 'E') this.up = false;
+            if (e.key === 'q' || e.key === 'Q') this.down = false;
+          };
+          window.addEventListener('keydown', this._onKeyDown);
+          window.addEventListener('keyup', this._onKeyUp);
+        },
+        tick(time, dt) {
+          const rig = this.el.object3D;
+          const dy = (this.up ? 1 : 0) - (this.down ? 1 : 0);
+          if (!dy) return;
+          const s = this.data.speed * (dt / 1000);
+          rig.position.y += dy * s;
+        },
+        remove() {
+          window.removeEventListener('keydown', this._onKeyDown);
+          window.removeEventListener('keyup', this._onKeyUp);
+        }
+      });
+
+      // Auto-center/scale the classroom so it sits on the floor and fits view
+      const el = document.querySelector('#classroom');
+      el.addEventListener('model-loaded', () => {
+        const obj = el.getObject3D('mesh');
+        if (!obj) return;
+
+        const box = new THREE.Box3().setFromObject(obj);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+
+        obj.position.sub(center);
+        obj.position.y += size.y / 2;
+
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const target = 10; // meters
+        const scale = target / maxDim;
+        el.setAttribute('scale', `${scale} ${scale} ${scale}`);
+
+        // Set a sensible starting distance
+        const rig = document.getElementById('player');
+        rig.setAttribute('position', `0 1.6 ${Math.max(8, (size.z * scale) + 5)}`);
+
+        console.log('✅ Classroom framed', { size, scale });
+      });
+    </script>
+  </body>
+</html>
+
+
+
+

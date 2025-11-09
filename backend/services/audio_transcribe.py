@@ -6,6 +6,7 @@ from .metrics import compute_metrics
 import torchaudio
 import librosa
 from pydub import AudioSegment
+import httpx
 
 
 load_dotenv()
@@ -13,6 +14,10 @@ api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     raise ValueError("❌ GEMINI_API_KEY not found in .env")
 genai.configure(api_key=api_key)
+
+deepgram_key = os.getenv("DEEPGRAM_API_KEY")
+if not deepgram_key:
+    raise ValueError("❌ DEEPGRAM_API_KEY not found in .env")
 
 
 def ensure_wav(input_path: str) -> str:
@@ -27,6 +32,30 @@ def ensure_wav(input_path: str) -> str:
         return output_path
     except Exception as e:
         raise RuntimeError(f"❌ Failed to convert to WAV: {e}")
+
+
+# --- Deepgram (REST API) test function ---
+async def deepgram_test(audio_path: str):
+    """Quick test call to verify Deepgram works (direct REST)."""
+    url = "https://api.deepgram.com/v1/listen"
+    params = {"punctuate": "true", "filler_words": "true", "utterances": "true"}
+    headers = {
+        "Authorization": f"Token {os.getenv('DEEPGRAM_API_KEY')}",
+        "Content-Type": "audio/wav",
+    }
+
+    with open(audio_path, "rb") as f:
+        data = f.read()
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(url, params=params, headers=headers, content=data)
+        response.raise_for_status()
+        result = response.json()
+
+    alt = result["results"]["channels"][0]["alternatives"][0]
+    transcript = alt.get("transcript", "")
+    print("🔊 Deepgram transcript (first 100 chars):", transcript[:100])
+    return transcript, result
 
 
 def run_pipeline(audio_path: str):
@@ -50,25 +79,61 @@ def run_pipeline(audio_path: str):
 
     print("Metrics:\n", metrics)
 
+    # --- Deepgram verification ---
+    print("Testing Deepgram transcription...")
+    try:
+        import asyncio
+        dg_transcript, dg_result = asyncio.run(deepgram_test(audio_path))
+        print("Deepgram test completed.")
+    except Exception as e:
+        print("❌ Deepgram test error:", e)
+        dg_transcript, dg_result = "", None
+
     try:
         model = genai.GenerativeModel("gemini-1.5-pro")
+
         prompt = f"""
-        You are a motivational public speaking coach.
-        Based on this transcript and its metrics, write two concise and constructive sentences of feedback.
-        Transcript: {transcript_text}
-        Metrics: {metrics}
+        You are a professional public speaking and communication coach.
+        Your task is to evaluate a short presentation excerpt based on both the spoken transcript and the quantified speech metrics provided.
+
+        === CONTEXT ===
+        Transcript:
+        {transcript_text}
+
+        === METRICS ===
+        - Fillers used: {metrics.get('fillers', 'N/A')}
+        - Repetitions: {metrics.get('repetitions', 'N/A')}
+        - Fluency score (0–10): {metrics.get('fluency_score', 'N/A')}
+        - Overall delivery score (0–10): {metrics.get('overall_score', 'N/A')}
+
+        === INSTRUCTIONS ===
+        1. Write exactly two sentences of personalized, encouraging feedback.
+        2. Be specific — reference the speaker’s use of fillers, repetitions, pacing, and clarity.
+        3. Highlight one strength and one actionable improvement.
+        4. Keep a motivational and professional tone (as if coaching a student preparing for a speech competition).
+        5. Avoid restating the metrics; interpret them instead.
+
+        Example style:
+        "Your delivery is clear and confident, showing solid preparation. Try reducing filler words like 'um' or 'like' to make your transitions smoother and maintain engagement."
+
+        Now write the final feedback below:
         """
+
         response = model.generate_content(prompt)
         feedback = response.text.strip()
     except Exception as e:
         print("❌ Gemini feedback error:", e)
         feedback = "Feedback unavailable."
 
-    return {
-        "filename": os.path.basename(audio_path),
-        "transcript": transcript_text,
-        "metrics": metrics
-    }
+
+        return {
+            "filename": os.path.basename(audio_path),
+            "transcript": transcript_text,
+            "metrics": metrics,
+            "deepgram_transcript": dg_transcript,
+            "feedback": feedback,
+        }
+
 
 if __name__ == "__main__":
     AUDIO_PATH = "sample.wav"
