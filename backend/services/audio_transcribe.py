@@ -1,4 +1,5 @@
 import os
+import json
 from dotenv import load_dotenv
 import google.generativeai as genai
 import whisper
@@ -7,6 +8,7 @@ import torchaudio
 import librosa
 from pydub import AudioSegment
 import httpx
+from datetime import datetime
 
 
 load_dotenv()
@@ -108,7 +110,7 @@ def run_pipeline(audio_path: str):
 
         === INSTRUCTIONS ===
         1. Write exactly two sentences of personalized, encouraging feedback.
-        2. Be specific — reference the speaker’s use of fillers, repetitions, pacing, and clarity.
+        2. Be specific — reference the speaker's use of fillers, repetitions, pacing, and clarity.
         3. Highlight one strength and one actionable improvement.
         4. Keep a motivational and professional tone (as if coaching a student preparing for a speech competition).
         5. Avoid restating the metrics; interpret them instead.
@@ -125,14 +127,30 @@ def run_pipeline(audio_path: str):
         print("❌ Gemini feedback error:", e)
         feedback = "Feedback unavailable."
 
+    result_data = {
+        "filename": os.path.basename(audio_path),
+        "transcript": transcript_text,
+        "fillers": metrics.get('fillers', 0),
+        "repetitions": metrics.get('repetitions', 0),
+        "fluency_score": metrics.get('fluency_score', 0),
+        "clarity_score": metrics.get('clarity_score', 0),
+        "wpm": metrics.get('wpm', 0),
+        "overall_score": metrics.get('overall_score', 0),
+        "feedback_summary": feedback,
+        "scene": "Auditorium",
+        "date": datetime.now().isoformat(),
+        "deepgram_transcript": dg_transcript
+    }
 
-        return {
-            "filename": os.path.basename(audio_path),
-            "transcript": transcript_text,
-            "metrics": metrics,
-            "deepgram_transcript": dg_transcript,
-            "feedback": feedback,
-        }
+    # Save to results directory
+    results_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results")
+    os.makedirs(results_dir, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_file = os.path.join(results_dir, f"session_{timestamp}.json")
+    with open(output_file, 'w') as f:
+        json.dump(result_data, f, indent=2)
+    print(f"✅ Results saved to: {output_file}")
+    return result_data
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import tempfile
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from services import audio_transcribe
 from datetime import datetime
@@ -35,19 +35,17 @@ def analyze():
             file.save(tmp.name)
             tmp_path = tmp.name
 
+        # Run analysis pipeline
         result = audio_transcribe.run_pipeline(tmp_path)
 
-        session_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "sessions"))
+        # Save session JSON
+        session_dir = os.path.join(CURRENT_DIR, "sessions")
         os.makedirs(session_dir, exist_ok=True)
-
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         save_path = os.path.join(session_dir, f"{timestamp}.json")
-
         with open(save_path, "w") as f:
             json.dump(result, f, indent=2)
-
-        print(f"✅ Session saved at: {save_path}")
-
+        print(f"Session saved at: {save_path}")
 
         os.remove(tmp_path)
         return jsonify(result), 200
@@ -56,13 +54,23 @@ def analyze():
         print("❌ Error during analysis:", e)
         return jsonify({"error": str(e)}), 500
 
-@app.route("/sessions", methods=["GET"])
+
+@app.route("/sessions/", methods=["GET"])
 def list_sessions():
-    """List all saved session files."""
+    """Return JSON list of saved session files."""
     session_dir = os.path.join(CURRENT_DIR, "sessions")
     os.makedirs(session_dir, exist_ok=True)
-    files = sorted(os.listdir(session_dir))
+    files = sorted([f for f in os.listdir(session_dir) if f.endswith(".json")])
     return jsonify({"sessions": files})
+
+@app.route("/sessions/<path:filename>", methods=["GET"])
+def serve_session(filename):
+    """Serve a specific session JSON file."""
+    session_dir = os.path.join(CURRENT_DIR, "sessions")
+    if not os.path.exists(os.path.join(session_dir, filename)):
+        return jsonify({"error": "Session file not found"}), 404
+    return send_from_directory(session_dir, filename)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
