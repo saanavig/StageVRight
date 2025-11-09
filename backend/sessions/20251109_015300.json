@@ -1,0 +1,20 @@
+{
+  "filename": "tmp1qk25ejc.wav",
+  "transcript": "Public speaking has never been easy for most people. The moment you step onto a stage, your heart races, practice and the right mindset those nerves can turn into confidence. Every great speaker wants to exactly where you are. Only where you are nervous, unsure but willing to try.",
+  "metrics": {
+    "transcript_length": 49,
+    "duration_seconds": 25.8,
+    "wpm": 113.8,
+    "fillers": 0,
+    "repetitions": 0,
+    "tone": "neutral",
+    "energy_level": 7,
+    "clarity_score": 10,
+    "fluency_score": 10,
+    "confidence_score": 8,
+    "overall_score": 8.8,
+    "feedback_summary": "Spoke at 113.8 WPM with 0 filler words and 0 repetitions. Good pacing overall \u2014 aim for fewer fillers for smoother delivery."
+  },
+  "deepgram_transcript": "Public speaking has never been easy for most people. The moment you step on to a stage. Their heart races. Practice, and the right mindset, those nerves can turn into confidence. Every great speaker wants understood exactly where you are, nervous, unsure, but willing to try.",
+  "feedback": "Feedback unavailable."
+}
