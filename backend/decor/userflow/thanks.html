@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SpeakSpaceVR — Thanks (3D)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <style>
+    html,body{margin:0;height:100%;background:#000;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    .ui{position:fixed;left:12px;bottom:12px;color:#cfe8ff;background:rgba(0,0,0,.45);
+        padding:10px 12px;border:1px solid #333;border-radius:10px;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="ui">WASD to move • Mouse to look • Gaze/Click the “Back to Environments” button • Press “Enter VR” for headset</div>
+
+  <a-scene renderer="antialias:true;physicallyCorrectLights:true" background="color: #061224">
+    <!-- Lights -->
+    <a-entity light="type: ambient; intensity: 0.4; color: #bcd9ff"></a-entity>
+    <a-entity light="type: directional; intensity: 1.0; color: #ffffff" position="2 4 -2"></a-entity>
+
+    <!-- Ground -->
+    <a-entity geometry="primitive: plane; width: 30; height: 30"
+              material="color: #0b1f42; metalness: 0.05; roughness: 0.95"
+              rotation="-90 0 0" position="0 0 0"></a-entity>
+
+    <!-- Sky / soft dome -->
+    <a-sky color="#081634"></a-sky>
+    <a-entity geometry="primitive: sphere; radius: 80"
+              material="color:#041028; side: back; opacity:.65"></a-entity>
+
+    <!-- Title + subtitle -->
+    <a-entity position="0 2.5 -3">
+      <a-entity text="value: Great job!; align: center; width: 6; color: #9bd6ff; shader: msdf;"></a-entity>
+      <a-entity position="0 -0.35 0"
+                text="value: Thank you for practicing with SpeakSpaceVR.; align: center; width: 5; color: #eaf2ff; shader: msdf;"></a-entity>
+      <a-entity position="0 -0.70 0"
+                text="value: Please check your web browser for your results and feedback—stay confident and good luck!; align: center; width: 5; color: #c3cfef; shader: msdf;"></a-entity>
+    </a-entity>
+
+    <!-- 3D Back button -->
+    <a-entity id="backBtn" class="pickable" position="0 0.9 -3">
+      <a-entity geometry="primitive: plane; width: 1.9; height: 0.5"
+                material="color: #59e0c5; roughness: .6; metalness: .1"></a-entity>
+      <a-entity position="0 0 0.01"
+                text="value: Back to Environments; align: center; width: 3; color: #03221b; shader: msdf;"></a-entity>
+    </a-entity>
+
+    <!-- Balloons -->
+    <a-entity id="balloons"></a-entity>
+
+    <!-- Confetti -->
+    <a-entity id="confetti"></a-entity>
+
+    <!-- Player/camera + reticle -->
+    <a-entity id="rig" position="0 1.6 3">
+      <a-entity camera look-controls wasd-controls></a-entity>
+      <a-entity cursor="fuse: true; fuseTimeout: 900"
+                position="0 0 -1"
+                geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
+                material="color: white; shader: flat"></a-entity>
+      <a-entity raycaster="objects: .pickable"></a-entity>
+    </a-entity>
+
+    <script>
+      // ---- Back button hover + click ----
+      (function(){
+        const btn = document.getElementById('backBtn');
+        const plane = btn.children[0];
+        btn.addEventListener('mouseenter', () => {
+          plane.setAttribute('animation__hover', 'property: scale; to: 1.05 1.05 1; dur: 120; easing: easeOutQuad');
+        });
+        btn.addEventListener('mouseleave', () => {
+          plane.setAttribute('animation__hover', 'property: scale; to: 1 1 1; dur: 120; easing: easeInQuad');
+        });
+        btn.addEventListener('click', () => { window.location.href = './pick-env.html'; });
+      })();
+
+      // ---- Balloons ----
+      (function makeBalloons(){
+        const root = document.getElementById('balloons');
+        const colors = ['#ff8aa1', '#ffd166', '#8bd7ff', '#b6f3a1', '#d4b3ff'];
+        const count = 5;
+        for(let i=0;i<count;i++){
+          const x = -2 + Math.random()*4;
+          const z = -3 - Math.random()*2;
+          const color = colors[i % colors.length];
+
+          const g = document.createElement('a-entity');
+          g.setAttribute('position', `${x} 1.8 ${z}`);
+
+          const balloon = document.createElement('a-entity');
+          balloon.setAttribute('geometry', 'primitive: sphere; radius: 0.25');
+          balloon.setAttribute('material', `color: ${color}; metalness: 0.05; roughness: 0.6`);
+          balloon.setAttribute('position', '0 0.5 0');
+          balloon.setAttribute('scale', '1 1.2 1');
+
+          const string = document.createElement('a-entity');
+          string.setAttribute('geometry', 'primitive: cylinder; radius: 0.005; height: 0.6');
+          string.setAttribute('material', 'color: #ffffff');
+          string.setAttribute('position', '0 0.2 0');
+
+          // Floating animation
+          g.setAttribute('animation__float', `property: position; dir: alternate; to: ${x} 2.3 ${z}; dur: ${1800 + Math.random()*1200}; easing: easeInOutSine; loop: true`);
+
+          g.appendChild(balloon);
+          g.appendChild(string);
+          root.appendChild(g);
+        }
+      })();
+
+      // ---- Confetti ----
+      (function makeConfetti(){
+        const root = document.getElementById('confetti');
+        const colors = ['#ffd166','#59e0c5','#ff8aa1','#8bd7ff','#b6f3a1','#d4b3ff'];
+        const COUNT = 90;
+
+        function spawnPiece(){
+          const x = -2.5 + Math.random()*5;
+          const y = 3 + Math.random()*2.5;
+          const z = -2.5 - Math.random()*3;
+          const w = 0.05 + Math.random()*0.05;
+          const h = 0.01 + Math.random()*0.03;
+          const dur = 2500 + Math.random()*2500;
+          const rot = `${Math.random()*360} ${Math.random()*360} ${Math.random()*360}`;
+          const color = colors[(Math.random()*colors.length)|0];
+
+          const p = document.createElement('a-entity');
+          p.setAttribute('position', `${x} ${y} ${z}`);
+          p.setAttribute('rotation', rot);
+
+          // little rectangle
+          p.setAttribute('geometry', `primitive: box; depth: 0.003; height: ${h}; width: ${w}`);
+          p.setAttribute('material', `color: ${color}; metalness: 0.1; roughness: 0.5`);
+          p.setAttribute('shadow', 'cast: true; receive: true');
+
+          // fall animation
+          p.setAttribute('animation__fall', `property: position; to: ${x} -0.2 ${z}; dur: ${dur}; easing: linear`);
+          // spin animation
+          p.setAttribute('animation__spin', `property: rotation; to: ${Math.random()*360} ${Math.random()*360} ${Math.random()*360}; dur: ${800 + Math.random()*900}; easing: linear; loop: true`);
+
+          // when done falling, respawn at top
+          p.addEventListener('animationcomplete__fall', () => {
+            p.parentNode && p.parentNode.removeChild(p);
+            setTimeout(spawnPiece, Math.random()*500);
+          });
+
+          root.appendChild(p);
+        }
+
+        for(let i=0;i<COUNT;i++) setTimeout(spawnPiece, Math.random()*1000);
+      })();
+    </script>
+  </a-scene>
+</body>
+</html>
+
