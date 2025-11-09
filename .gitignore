@@ -1,3 +1,6 @@
 # Large file that exceeds GitHub's size limit
 backend/decor/Symposium/3291.glb
+.DS_Store
+.AppleDouble
+.LSOverride
 venv/
