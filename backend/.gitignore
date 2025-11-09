@@ -36,4 +36,4 @@ Thumbs.db
 *.code-workspace
 
 node_modules/
-dist/
+dist/.DS_Store
